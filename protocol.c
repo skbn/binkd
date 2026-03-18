@@ -11,6 +11,8 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -21,6 +23,8 @@
 #else
 #include <time.h>
 #endif
+
+#include <netinet/in.h>
 
 #include "sys.h"
 #include "readcfg.h"
@@ -571,11 +575,16 @@ static int send_block (STATE *state, BINKD_CONFIG *config)
 
       if (config->percents && state->out.f && state->out.size > 0)
       {
+#ifdef HAVE_THREADS
         LockSem(&lsem);
+#endif
+
         printf ("%-20.20s %3.0f%%\r", state->out.netname,
                 100.0 * ftello (state->out.f) / (float) state->out.size);
         fflush (stdout);
+#ifdef HAVE_THREADS
         ReleaseSem(&lsem);
+#endif
       }
 
       if (state->out.f && (sz == 0 || state->out.size == ftello(state->out.f))
@@ -2686,11 +2695,16 @@ static int recv_block (STATE *state, BINKD_CONFIG *config)
         }
         if (config->percents && state->in.size > 0)
         {
-          LockSem(&lsem);
+#ifdef HAVE_THREADS
+       LockSem(&lsem);
+#endif
           printf ("%-20.20s %3.0f%%\r", state->in.netname,
                   100.0 * ftello (state->in.f) / (float) state->in.size);
           fflush (stdout);
+
+#ifdef HAVE_THREADS
           ReleaseSem(&lsem);
+#endif
         }
         if (ftello (state->in.f) == state->in.size)
         {

@@ -11,6 +11,9 @@
  *  (at your option) any later version. See COPYING.
  */
 
+/* CHANGES */
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -505,6 +508,8 @@ int main (int argc, char *argv[])
   if (!client_flag && !server_flag)
     client_flag = server_flag = 1;
 
+/* CHANGES */
+#ifdef HAVE_THREADS
   InitSem (&hostsem);
   InitSem (&resolvsem);
   InitSem (&lsem);
@@ -513,6 +518,8 @@ int main (int argc, char *argv[])
   InitSem (&config_sem);
   InitEventSem (&eothread);
   InitEventSem (&wakecmgr);
+#endif
+
 #ifdef OS2
   InitSem (&fhsem);
 #endif

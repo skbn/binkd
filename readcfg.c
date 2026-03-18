@@ -11,6 +11,8 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -241,9 +243,14 @@ void unlock_config_structure(BINKD_CONFIG *c, int on_exit)
 {
   int  usage;
 
+#ifdef HAVE_THREADS
   LockSem(&config_sem);
+#endif
+
   usage = --(c->usageCount);
+#ifdef HAVE_THREADS
   ReleaseSem(&config_sem);
+#endif
 
   if (usage == 0)
   {
@@ -301,13 +308,17 @@ BINKD_CONFIG *lock_current_config(void)
 {
   BINKD_CONFIG *ret;
 
+#ifdef HAVE_THREADS
   LockSem(&config_sem);
+#endif
 
   ret = current_config;
   if (ret)
     lock_config_structure(ret);
 
+#ifdef HAVE_THREADS
   ReleaseSem(&config_sem);
+#endif
 
   return ret;
 }
@@ -932,10 +943,16 @@ int checkcfg(void)
     perl_config_loaded(new_config);
 #endif
 
+#ifdef HAVE_THREADS
     LockSem(&config_sem);
+#endif
+
     old_config = current_config;
     current_config = new_config;
+
+#ifdef HAVE_THREADS
     ReleaseSem(&config_sem);
+#endif
 
     if (old_config)
       unlock_config_structure(old_config, 0);

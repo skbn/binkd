@@ -11,6 +11,8 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
+
 #include <signal.h>
 
 #include "sys.h"
@@ -154,6 +156,8 @@ void exitfunc (void)
     unlock_config_structure(config, 1);
 #endif
   }
+
+#ifdef HAVE_THREADS
   CleanSem (&config_sem);
   CleanSem (&hostsem);
   CleanSem (&resolvsem);
@@ -162,6 +166,8 @@ void exitfunc (void)
   CleanSem (&varsem);
   CleanEventSem (&eothread);
   CleanEventSem (&wakecmgr);
+#endif
+
 #ifdef OS2
   CleanSem (&fhsem);
 #endif

@@ -11,6 +11,7 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -18,6 +19,8 @@
 #include <signal.h>
 #include <sys/wait.h>
 #endif
+
+#include <netinet/in.h>
 
 #include "sys.h"
 #include "readcfg.h"
@@ -117,9 +120,16 @@ static int do_client(BINKD_CONFIG *config)
     config->q_present = 1;
     if (config->printq)
     {
+#ifdef HAVE_THREADS
       LockSem (&lsem);
+#endif
+
       q_list (stderr, SCAN_LISTED, config);
+
+#ifdef HAVE_THREADS
       ReleaseSem (&lsem);
+#endif
+
       Log (-1, "idle\r");
     }
   }
@@ -148,7 +158,11 @@ static int do_client(BINKD_CONFIG *config)
         unlock_config_structure(config, 0);
         rel_grow_handles (-6);
         threadsafe(--n_clients);
+
+#ifdef HAVE_THREADS
         PostSem(&eothread);
+#endif
+
         Log (1, "cannot branch out");
         SLEEP(1);
       }

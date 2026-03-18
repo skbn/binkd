@@ -11,6 +11,7 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>

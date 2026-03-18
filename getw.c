@@ -2,6 +2,8 @@
  * getwordx public domain library v.2.0
  * (c) 1995,1996,1997 <maloff@tts.magadan.su>
  */
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>

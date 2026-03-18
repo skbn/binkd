@@ -11,6 +11,8 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_SYS_TIME_H
@@ -21,7 +23,10 @@
 #ifdef HAVE_FORK
 #include <signal.h>
 #include <sys/wait.h>
+
 #endif
+
+#include <netinet/in.h>
 
 #include "sys.h"
 #include "iphdr.h"
@@ -289,7 +294,11 @@ static int do_server(BINKD_CONFIG *config)
           soclose(new_sockfd);
           rel_grow_handles (-6);
           threadsafe(--n_servers);
+
+#ifdef HAVE_THREADS
           PostSem(&eothread);
+#endif
+
           Log (1, "servmgr branch(): cannot branch out");
           sleep(1);
         }
@@ -330,5 +339,9 @@ void servmgr (void)
   } while (status == 0 && !binkd_exit);
   Log(4, "downing servmgr...");
   pidsmgr = 0;
+
+#ifdef HAVE_THREADS
   PostSem(&eothread);
+#endif
+
 }

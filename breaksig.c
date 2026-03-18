@@ -11,6 +11,8 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <signal.h>
 #include <stdio.h>

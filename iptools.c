@@ -11,6 +11,8 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -19,6 +21,8 @@
 #if defined(HAVE_SYS_IOCTL_H)
 #include <sys/ioctl.h>
 #endif
+
+#include <netinet/in.h>
 
 #include "sys.h"
 #include "Config.h"

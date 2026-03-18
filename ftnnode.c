@@ -11,8 +11,12 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <string.h>
+
+#include <netinet/in.h>
 
 #include "sys.h"
 #include "readcfg.h"

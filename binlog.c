@@ -21,6 +21,8 @@
 /*                        System include files                        */
 /*--------------------------------------------------------------------*/
 
+#include <stdarg.h>
+
 #include <stdio.h>
 
 /*--------------------------------------------------------------------*/
@@ -104,7 +106,11 @@ static void TLogStat (int status, STATE *state, char *binlogpath, int tzoff)
 		if (status) {
 			TS.fStatus |= 3;
 		}
+
+#ifdef HAVE_THREADS
 		LockSem(&blsem);
+#endif
+
 		if ((fl = fopen(binlogpath,"ab")) != NULL) {
 			/* fwrite(&TS, sizeof(TS), 1, fl); */
 			/* FIXME: check retcode and set original file size
@@ -121,9 +127,14 @@ static void TLogStat (int status, STATE *state, char *binlogpath, int tzoff)
 			fputc (TS.fFSent,    fl);
 			fput16(TS.fStatus,   fl);
 			fclose(fl);
+#ifdef HAVE_THREADS
 			ReleaseSem(&blsem);
+#endif
 		} else {
+#ifdef HAVE_THREADS
 			ReleaseSem(&blsem);
+#endif
+
 			Log(1,"unable to open binary log file `%s'",binlogpath);
 		}
 	}
@@ -174,7 +185,10 @@ static void FDLogStat (STATE *state, char *fdinhist, char *fdouthist, int tzoff)
 	std.Sent = (u32)(state->bytes_sent);
 	std.Cost = 0; /* Let it be free :) */
 
+#ifdef HAVE_THREADS
 	LockSem(&blsem);
+#endif
+
 	if ((fp = fopen ( state->to ? fdouthist : fdinhist, "ab" )) != NULL)
 	{
 		/* fwrite ( &std, (size_t) sizeof(std), (size_t) 1, fp); */
@@ -193,11 +207,16 @@ static void FDLogStat (STATE *state, char *fdinhist, char *fdouthist, int tzoff)
 		fput32(std.Sent,       fp);
 		fput32(std.Cost,       fp);
 		fclose( fp );
+
+#ifdef HAVE_THREADS
 		ReleaseSem(&blsem);
+#endif
 	}
 	else
 	{
+#ifdef HAVE_THREADS
 		ReleaseSem(&blsem);
+#endif
 		Log (1, "failed to write to %s", (state->to ? fdouthist : fdinhist));
 	}
 }

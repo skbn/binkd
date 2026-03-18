@@ -3,6 +3,8 @@
  * code is working in VERY diff. ways in forking vs. threading versions!!
  */
 
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>

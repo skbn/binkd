@@ -14,6 +14,8 @@
 #ifndef _readcfg_h
 #define _readcfg_h
 
+#include <stdarg.h>
+
 #include <stdio.h>
 
 #include "Config.h"

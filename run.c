@@ -11,6 +11,8 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -18,6 +20,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
 
 #include "sys.h"
 #include "run.h"
@@ -40,14 +43,24 @@
 #define SHELL (getenv("COMSPEC") ? getenv("COMSPEC") : "command.com")
 #define SHELL_META "\"\'\\%<>|&^@"
 #define SHELLOPT "/c"
+#elif defined(AMIGA)
+  #define SHELL NULL
+  #define SHELL_META NULL
+  #define SHELLOPT NULL
 #else
 #error "Unknown platform"
 #endif
-
 int run (char *cmd)
 {
   int rc=-1;
-#if defined(EMX)
+
+#ifdef AMIGA
+  Log(3, "executing `%s` (AmigaOS Execute)", cmd);
+  if (Execute(cmd, NULL, NULL) == 0)
+    Log(1, "Execute failed: %s", cmd);
+  else
+    rc = 0;  /* éxito */
+#elif defined(EMX)
   sigset_t s;
     
   sigemptyset(&s);
@@ -142,6 +155,14 @@ int run3 (const char *cmd, int *in, int *out, int *err)
   int pin[2], pout[2], perr[2];
   const char *shell;
 
+#ifdef AMIGA
+  Log(3, "running `%s` in run3() (AmigaOS Execute)", cmd);
+  if (Execute(cmd, NULL, NULL) == 0)
+    Log(1, "Execute failed: %s", cmd);
+  pid = 0;
+  return pid;
+#endif
+
   if (in && pipe(pin) == -1)
   {
     Log (1, "Cannot create input pipe (stdin): %s", strerror(errno));
@@ -191,6 +212,7 @@ int run3 (const char *cmd, int *in, int *out, int *err)
       close(perr[0]);
       close(perr[1]);
     }
+#if !defined(AMIGA)
     if (strpbrk(cmd, SHELL_META))
     {
       shell = SHELL;
@@ -214,6 +236,7 @@ int run3 (const char *cmd, int *in, int *out, int *err)
       execvp(args[0], args);
       xfree(args);
     }
+#endif
     Log (1, "Execution '%s' failed: %s", cmd, strerror(errno));
     return -1;
   }
@@ -285,6 +308,7 @@ int run3 (const char *cmd, int *in, int *out, int *err)
       *err = set_cloexec(*err);
 #endif
     }
+#if !defined(AMIGA)
     if (strpbrk(cmd, SHELL_META) == NULL)
     {
       /* execute command directly */
@@ -306,6 +330,7 @@ int run3 (const char *cmd, int *in, int *out, int *err)
       shell = SHELL;
       pid = spawnl(P_NOWAIT, shell, shell, SHELLOPT, cmd, NULL);
     }
+#endif
 
     if (pid == -1)
       save_errno = errno;

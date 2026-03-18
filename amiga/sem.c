@@ -3,7 +3,7 @@
  */
 #include <exec/exec.h>
 #include <proto/exec.h>
-#include <inline/strsup.h>
+/*#include <inline/strsup.h>*/
 
 extern void Log (int lev, char *s,...);
 

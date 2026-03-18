@@ -11,6 +11,8 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#include <stdarg.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
@@ -272,14 +274,20 @@ struct tm *safe_localtime(time_t *t, struct tm *tm)
 
 void InitLog(int loglevel, int conlog, char *logpath, void *first)
 {
+#ifdef HAVE_THREADS
   LockSem(&lsem);
+#endif
+
   xfree(current_logpath);
   current_logpath  = NULL;   /* just in case if xstrdup() fails */
   current_loglevel = loglevel;
   current_conlog   = conlog;
   current_logpath  = xstrdup(logpath);
   current_nolog    = (struct maskchain *)first;
+
+#ifdef HAVE_THREADS
   ReleaseSem(&lsem);
+#endif
 }
 
 void vLog (int lev, char *s, va_list ap)
@@ -312,11 +320,18 @@ void vLog (int lev, char *s, va_list ap)
 
     if (lev <= current_conlog && !inetd_flag)
     {
+#ifdef HAVE_THREADS
       LockSem(&lsem);
+#endif
+
       fprintf (stderr, "%30.30s\r%c %02d:%02d [%u] %s%s", " ", ch,
            tm.tm_hour, tm.tm_min, (unsigned) PID (), buf, (lev >= 0) ? "\n" : "");
       fflush (stderr);
+
+#ifdef HAVE_THREADS
       ReleaseSem(&lsem);
+#endif
+
       if (lev < 0)
         return;
     }
@@ -328,7 +343,10 @@ void vLog (int lev, char *s, va_list ap)
       FILE *logfile = 0;
       int i;
 
+#ifdef HAVE_THREADS
       LockSem(&lsem);
+#endif
+
       for (i = 0; logfile == 0 && i < 10; ++i)
         logfile = fopen (using_logpath, "a");
       if (logfile)
@@ -342,7 +360,10 @@ void vLog (int lev, char *s, va_list ap)
       }
       else
         fprintf (stderr, "Cannot open %s: %s!\n", using_logpath, strerror (errno));
+#ifdef HAVE_THREADS
       ReleaseSem(&lsem);
+#endif
+
     }
 #ifdef WIN32
 #ifdef BINKD9X
