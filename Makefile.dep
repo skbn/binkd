@@ -1,0 +1,61 @@
+binkd.o: binkd.c sys.h readcfg.h Config.h btypes.h iphdr.h common.h \
+ server.h client.h tools.h getw.h bsy.h protocol.h setpttl.h sem.h \
+ ftnnode.h ftnaddr.h rfc2553.h srv_gai.h confopt.h
+readcfg.o: readcfg.c sys.h readcfg.h Config.h btypes.h iphdr.h \
+ common.h sem.h tools.h getw.h protoco2.h srif.h iptools.h readflo.h \
+ ftnaddr.h ftnnode.h ftndom.h ftnq.h
+tools.o: tools.c sys.h readcfg.h Config.h btypes.h iphdr.h common.h \
+ tools.h getw.h readdir.h sem.h assert.h
+ftnaddr.o: ftnaddr.c sys.h tools.h getw.h btypes.h Config.h ftndom.h \
+ ftnaddr.h iphdr.h
+ftnq.o: ftnq.c sys.h readcfg.h Config.h btypes.h iphdr.h ftnq.h \
+ ftnnode.h ftnaddr.h tools.h getw.h readdir.h
+client.o: client.c sys.h readcfg.h Config.h btypes.h iphdr.h client.h \
+ ftnnode.h ftnaddr.h common.h iptools.h ftnq.h tools.h getw.h \
+ protocol.h bsy.h assert.h setpttl.h sem.h run.h https.h rfc2553.h \
+ srv_gai.h
+server.o: server.c sys.h iphdr.h readcfg.h Config.h btypes.h common.h \
+ server.h iptools.h tools.h getw.h protocol.h assert.h setpttl.h sem.h \
+ rfc2553.h
+protocol.o: protocol.c sys.h readcfg.h Config.h btypes.h iphdr.h \
+ common.h protocol.h ftnaddr.h ftnnode.h ftndom.h ftnq.h iptools.h \
+ tools.h getw.h bsy.h inbound.h protoco2.h srif.h readflo.h prothlp.h \
+ assert.h binlog.h setpttl.h sem.h md5b.h crypt.h compress.h rfc2553.h
+bsy.o: bsy.c sys.h readcfg.h Config.h btypes.h iphdr.h bsy.h ftnaddr.h \
+ ftndom.h sem.h tools.h getw.h assert.h readdir.h
+inbound.o: inbound.c sys.h readcfg.h Config.h btypes.h iphdr.h \
+ inbound.h protoco2.h common.h tools.h getw.h protocol.h readdir.h \
+ ftnaddr.h ftnnode.h srif.h
+breaksig.o: breaksig.c sys.h common.h iphdr.h tools.h getw.h btypes.h \
+ Config.h sem.h
+branch.o: branch.c sys.h common.h iphdr.h tools.h getw.h btypes.h \
+ Config.h sem.h
+rename.o: amiga/rename.c
+getfree.o: amiga/getfree.c
+ftndom.o: ftndom.c sys.h ftndom.h btypes.h Config.h tools.h getw.h
+ftnnode.o: ftnnode.c sys.h readcfg.h Config.h btypes.h iphdr.h \
+ ftnnode.h ftnaddr.h sem.h tools.h getw.h ftnq.h rfc2553.h srv_gai.h
+srif.o: srif.c sys.h readcfg.h Config.h btypes.h iphdr.h protoco2.h \
+ srif.h ftnaddr.h tools.h getw.h run.h ftnq.h prothlp.h protocol.h \
+ rfc2553.h
+pmatch.o: pmatch.c
+readflo.o: readflo.c Config.h sys.h tools.h getw.h btypes.h readflo.h
+prothlp.o: prothlp.c sys.h prothlp.h btypes.h Config.h tools.h getw.h \
+ crypt.h
+iptools.o: iptools.c sys.h Config.h iphdr.h common.h iptools.h tools.h \
+ getw.h btypes.h sem.h rfc2553.h
+rfc2553.o: rfc2553.c rfc2553.h iphdr.h sys.h sem.h
+run.o: run.c sys.h run.h tools.h getw.h btypes.h Config.h sem.h
+binlog.o: binlog.c sys.h readcfg.h Config.h btypes.h iphdr.h \
+ protoco2.h binlog.h tools.h getw.h sem.h
+sem.o: amiga/sem.c
+exitproc.o: exitproc.c sys.h readcfg.h Config.h btypes.h iphdr.h \
+ common.h ftnnode.h bsy.h tools.h getw.h sem.h server.h
+getw.o: getw.c Config.h sys.h tools.h getw.h btypes.h
+xalloc.o: xalloc.c sys.h tools.h getw.h btypes.h Config.h
+setpttl.o: setpttl.c setpttl.h
+https.o: https.c sys.h readcfg.h Config.h btypes.h iphdr.h https.h \
+ tools.h getw.h iptools.h sem.h rfc2553.h srv_gai.h
+md5b.o: md5b.c sys.h iphdr.h protoco2.h btypes.h Config.h md5b.h \
+ tools.h getw.h server.h
+crypt.o: crypt.c crypt.h

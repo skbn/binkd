@@ -15,7 +15,7 @@ binkd: $(OBJS)
 install: all clean
 clean:
 	rm -f *.[bo] *.BAK *.core *.obj *.err *~ core
-depend Makefile.dep:   Makefile
+depend Makefile.dep:   Makefile.amiga
 	  $(CC) -MM $(CFLAGS) $(SRCS) $(SYS) | \
 	      awk '{ if ($$1 != prev) { if (rec != "") print rec; \
 		  rec = $$0; prev = $$1; } \
