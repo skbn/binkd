@@ -39,6 +39,11 @@
 #endif
 #include "rfc2553.h"
 
+#ifdef AMIGA
+#include <proto/dos.h>
+
+#endif
+
 extern EVENTSEM eothread;
 
 int n_servers = 0;
@@ -100,6 +105,8 @@ static int do_server(BINKD_CONFIG *config)
   int opt = 1;
   int save_errno;
   struct listenchain *listen_list;
+int try = 0;
+int bnd = 0;
 
   /* Wait for the thread to finish so you can reuse the sockets again */
   /*Delay(1 * 50);*/ /* 10 seconds */
@@ -145,12 +152,30 @@ static int do_server(BINKD_CONFIG *config)
                     (char *) &opt, sizeof opt) == SOCKET_ERROR)
         Log (1, "servmgr setsockopt (SO_REUSEADDR): %s", TCPERR ());
     
-      if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
+      /*if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
+      {
+        Log(1, "servmgr bind(): %s", TCPERR ());
+        soclose(sockfd[sockfd_used]);
+        return -1;
+      }*/
+
+	  for(try = 0; try < 10; try++)
+	  {
+		  bnd = bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen);
+
+		  if(bnd == 0)
+			  break;
+		  else
+			  Delay(2 * 50);
+	  }
+
+      if (bnd != 0)
       {
         Log(1, "servmgr bind(): %s", TCPERR ());
         soclose(sockfd[sockfd_used]);
         return -1;
       }
+
       if (listen (sockfd[sockfd_used], 5) != 0)
       {
         Log(1, "servmgr listen(): %s", TCPERR ());
@@ -181,7 +206,7 @@ static int do_server(BINKD_CONFIG *config)
     fd_set r;
 
 	/* Ugly fix to wait for the thread to finish so you can reuse the sockets again */
-	Delay(5 * 50); /* 10 seconds */
+	/*Delay(5 * 50);*/ /* 10 seconds */
 
     FD_ZERO (&r);
     for (curfd=0; curfd<sockfd_used; curfd++)
