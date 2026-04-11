@@ -101,6 +101,9 @@ static int do_server(BINKD_CONFIG *config)
   int save_errno;
   struct listenchain *listen_list;
 
+  /* Wait for the thread to finish so you can reuse the sockets again */
+  Delay(15 * 50); /* 10 seconds */
+
   /* setup hints for getaddrinfo */
   memset((void *)&hints, 0, sizeof(hints));
   hints.ai_flags = AI_PASSIVE;
@@ -178,7 +181,7 @@ static int do_server(BINKD_CONFIG *config)
     fd_set r;
 
 	/* Wait for the thread to finish so you can reuse the sockets again */
-	Delay(5 * 50); /* 5 seconds */
+	Delay(15 * 50); /* 10 seconds */
 
     FD_ZERO (&r);
     for (curfd=0; curfd<sockfd_used; curfd++)
