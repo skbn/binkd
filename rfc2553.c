@@ -88,6 +88,45 @@ int getaddrinfo(const char *nodename, const char *servname,
    /* Hostname lookup, only if this is not a listening socket */
    if (hints != 0 && (hints->ai_flags & AI_PASSIVE) != AI_PASSIVE)
    {
+      /* BUGFIX: try to parse nodename as a numeric IP address first.
+       * On AmigaOS ixnet, gethostbyname("x.x.x.x") fails for dotted-decimal
+       * addresses, returning EAI_NONAME and printing a spurious warning in
+       * the caller (e.g. "bind -- getaddrinfo: hostname nor servname
+       * provided, or not known").  Use inet_addr() to detect and handle
+       * the numeric case without going through the resolver.
+       */
+      unsigned long numeric_ip = inet_addr(nodename);
+      if (numeric_ip != (unsigned long)INADDR_NONE)
+      {
+         /* It's a dotted-decimal address — build the result directly */
+         *Result = (struct addrinfo *)calloc(sizeof(**Result), 1);
+         if (*Result == NULL)
+         {
+            ret = EAI_MEMORY;
+            goto cleanup;
+         }
+         if (*res == NULL)
+            *res = *Result;
+
+         (*Result)->ai_family   = AF_INET;
+         (*Result)->ai_socktype = Proto;
+         #ifdef IPPROTO_TCP
+         if (Proto == SOCK_STREAM) (*Result)->ai_protocol = IPPROTO_TCP;
+         if (Proto == SOCK_DGRAM)  (*Result)->ai_protocol = IPPROTO_UDP;
+         #endif
+         (*Result)->ai_addrlen = sizeof(struct sockaddr_in);
+         (*Result)->ai_addr = (struct sockaddr *)calloc(sizeof(struct sockaddr_in), 1);
+         if ((*Result)->ai_addr == NULL)
+         {
+            ret = EAI_MEMORY;
+            goto cleanup;
+         }
+         ((struct sockaddr_in *)(*Result)->ai_addr)->sin_family = AF_INET;
+         ((struct sockaddr_in *)(*Result)->ai_addr)->sin_port   = Port;
+         ((struct sockaddr_in *)(*Result)->ai_addr)->sin_addr.s_addr = numeric_ip;
+         goto cleanup; /* success, ret == 0 */
+      }
+
       Addr = gethostbyname(nodename);
       if (Addr == 0)
       {

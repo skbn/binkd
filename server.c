@@ -41,7 +41,6 @@
 
 #ifdef AMIGA
 #include <proto/dos.h>
-
 #endif
 
 extern EVENTSEM eothread;
@@ -105,11 +104,6 @@ static int do_server(BINKD_CONFIG *config)
   int opt = 1;
   int save_errno;
   struct listenchain *listen_list;
-int try = 0;
-int bnd = 0;
-
-  /* Wait for the thread to finish so you can reuse the sockets again */
-  /*Delay(1 * 50);*/ /* 10 seconds */
 
   /* setup hints for getaddrinfo */
   memset((void *)&hints, 0, sizeof(hints));
@@ -152,24 +146,7 @@ int bnd = 0;
                     (char *) &opt, sizeof opt) == SOCKET_ERROR)
         Log (1, "servmgr setsockopt (SO_REUSEADDR): %s", TCPERR ());
     
-      /*if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
-      {
-        Log(1, "servmgr bind(): %s", TCPERR ());
-        soclose(sockfd[sockfd_used]);
-        return -1;
-      }*/
-
-	  for(try = 0; try < 10; try++)
-	  {
-		  bnd = bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen);
-
-		  if(bnd == 0)
-			  break;
-		  else
-			  Delay(2 * 50);
-	  }
-
-      if (bnd != 0)
+      if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
       {
         Log(1, "servmgr bind(): %s", TCPERR ());
         soclose(sockfd[sockfd_used]);
@@ -204,9 +181,6 @@ int bnd = 0;
     int n;
     int curfd, maxfd = 0;
     fd_set r;
-
-	/* Ugly fix to wait for the thread to finish so you can reuse the sockets again */
-	/*Delay(5 * 50);*/ /* 10 seconds */
 
     FD_ZERO (&r);
     for (curfd=0; curfd<sockfd_used; curfd++)
@@ -281,7 +255,21 @@ int bnd = 0;
 #if defined(OS2) || defined(AMIGA)
           /* Buggy external process closed our socket? Or OS/2 bug? */
           if (save_errno == ENOTSOCK)
+          {
+            /* BUGFIX: close all open sockets and reset counter before
+             * returning 0 (restart). Without this, do_server() is called
+             * again with sockfd_used != 0, so new sockets are appended at
+             * wrong positions while stale closed descriptors remain in
+             * sockfd[0..old_used-1].  Those stale fds cause the very next
+             * select() to fail with ENOTSOCK again, and the subsequent
+             * bind() to fail with EACCES because the port is still held
+             * by the unreleased old socket.
+             */
+            for (curfd = 0; curfd < sockfd_used; curfd++)
+              soclose(sockfd[curfd]);
+            sockfd_used = 0;
             return 0;  /* will force socket re-creation */
+          }
 #endif
           return -1;
         }
