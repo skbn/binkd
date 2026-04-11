@@ -177,6 +177,9 @@ static int do_server(BINKD_CONFIG *config)
     int curfd, maxfd = 0;
     fd_set r;
 
+	/* Wait for the thread to finish so you can reuse the sockets again */
+	Delay(5 * 50); /* 5 seconds */
+
     FD_ZERO (&r);
     for (curfd=0; curfd<sockfd_used; curfd++)
     {
