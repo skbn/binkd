@@ -39,10 +39,6 @@
 #endif
 #include "rfc2553.h"
 
-#ifdef AMIGA
-#include <proto/dos.h>
-#endif
-
 extern EVENTSEM eothread;
 
 int n_servers = 0;

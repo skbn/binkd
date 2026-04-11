@@ -16,6 +16,8 @@ rfc2553.h
 server.h
 tools.c
 
+inbound.c	Skip mtime para arcmail/pkt/tic/req. By preventing it from requesting the files multiple times, and by not allowing it to send an M_GOT to the server
+
 rfc2553.c	Add variable "int h_errno = 0;" warning bind -- getaddrinfo
 run.c		Added code to execute in an external program from the shell
 sem.h		Add struct EVENTSEM and the declarations of the functions for the missing threads (_InitEventSem, _CleanEventSem, _PostSem, _WaitSem)
@@ -23,7 +25,8 @@ sem.h		Add struct EVENTSEM and the declarations of the functions for the missing
 server.c	Add extern EVENTSEM and "#if defined(OS2) || defined(AMIGA)", This fixes a bug that caused the socket to close without releasing memory and not recreating it, resulting in a signal #15 error. bind() error and random crash. ermission denied (EACCES/EPERM)
 
 amiga:
-rename.c	Fix with rename, which was causing a signal #15 with ixemul causing it to close sockets in server.c
+rename.c	Fix with rename, which was causing a signal #15 with ixemul causing it to close sockets in server.c, delete destination before renaming
+
 sem.c		_InitEventSem, _CleanEventSem, _PostSem, _WaitSem. With these functions added, the remaining ones needed to complete the threading section were also included.
 
 LIBS:
