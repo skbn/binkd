@@ -1,0 +1,17 @@
+CC = gcc
+
+CFLAGS = -O2 -noixemul
+SRCS = decompress.c 
+OBJS = decompress.o
+
+all: decompress
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
+decompress: $(OBJS)
+	$(CC) $(CFLAGS) -o decompress $(OBJS)
+
+install: all clean
+
+clean:
+	rm -f decompress decompress.o
