@@ -44,6 +44,9 @@
 #include "rfc2553.h"
 #include "srv_gai.h"
 
+extern MUTEXSEM lsem;
+extern EVENTSEM eothread;
+
 static void call (void *arg);
 
 int n_clients = 0;

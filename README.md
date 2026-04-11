@@ -6,6 +6,14 @@ FTN-based (Fido Technology Network) networks.
 
 ## Compiling
 
+AmigaOS:
+
+Need ADE to compile project with ixemul library.
+
+https://aminet.net/package/dev/gcc/ADE
+
+
+
 non-UNIX:
 
 1. Find in mkfls/ a subdirectory for your system/compiler, copy all files 

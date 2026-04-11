@@ -35,6 +35,8 @@
 #include "tools.h"
 #include "sem.h"
 
+extern MUTEXSEM blsem;
+
 /* Write 16-bit integer to file in intel bytes order */
 static int fput16(u16 arg, FILE *file)
 {

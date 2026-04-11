@@ -36,6 +36,8 @@ static const char out_flvrs[] = "icdohICDOH";
 static FTNQ *q_add_dir (FTNQ *q, char *dir, FTN_ADDR *fa1, BINKD_CONFIG *config);
 FTNQ *q_add_file (FTNQ *q, char *filename, FTN_ADDR *fa1, char flvr, char action, char type, BINKD_CONFIG *config);
 
+static FTNQ *q_scan_box (FTNQ *q, FTN_ADDR *fa, char *boxpath, char flvr, int deleteempty, BINKD_CONFIG *config);
+
 /*
  * q_free(): frees memory allocated by q_scan()
  */
@@ -159,6 +161,7 @@ FTNQ *q_scan (FTNQ *q, BINKD_CONFIG *config)
   qn_params.pq     = &q;
   qn_params.config = config;
   foreach_node (qn_scan, &qn_params, config);
+
   return q;
 }
 

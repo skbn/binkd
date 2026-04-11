@@ -44,6 +44,8 @@
  */
 BINKD_CONFIG  *current_config;
 
+extern struct SignalSemaphore config_sem;
+
 /*
  * Temporary static structure for configuration reading
  */

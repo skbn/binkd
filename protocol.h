@@ -1,6 +1,10 @@
 #ifndef _protocol_h
 #define _protocol_h
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
 enum { P_NULL = 0, P_NONSECURE, P_SECURE, 
        P_NA = 0x100, P_WE_NONSECURE, P_REMOTE_NONSECURE };
 

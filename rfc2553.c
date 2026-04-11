@@ -29,7 +29,8 @@ int getaddrinfo(const char *nodename, const char *servname,
    const char *End;
    char **CurAddr;
    int ret = 0;
-   
+   int h_errno = 0;
+
    /* Sanitize return parameters */
    if (res == NULL)
       return EAI_UNKNOWN;

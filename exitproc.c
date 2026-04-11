@@ -32,6 +32,15 @@
 #include "nt/w32tools.h"
 #endif
 
+extern MUTEXSEM hostsem;
+extern MUTEXSEM resolvsem;
+extern MUTEXSEM lsem;
+extern MUTEXSEM blsem;
+extern MUTEXSEM varsem;
+extern MUTEXSEM config_sem;
+extern EVENTSEM eothread;
+extern EVENTSEM wakecmgr;
+
 int binkd_exit;
 
 #ifdef HAVE_THREADS

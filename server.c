@@ -39,6 +39,8 @@
 #endif
 #include "rfc2553.h"
 
+extern EVENTSEM eothread;
+
 int n_servers = 0;
 int ext_rand = 0;
 
@@ -245,7 +247,7 @@ static int do_server(BINKD_CONFIG *config)
             continue;
 #endif
         accepterr:
-#ifdef OS2
+#if defined(OS2) || defined(AMIGA)
           /* Buggy external process closed our socket? Or OS/2 bug? */
           if (save_errno == ENOTSOCK)
             return 0;  /* will force socket re-creation */

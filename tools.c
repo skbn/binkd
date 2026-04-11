@@ -38,6 +38,9 @@
 #include "nt/w32tools.h"
 #endif
 
+extern MUTEXSEM lsem;
+extern void vLog (int lev, char *s, va_list ap);
+
 /*
  * We can call Log() even when we have no config ready. So, we must keep
  * internal variables which will be updated when config is loaded

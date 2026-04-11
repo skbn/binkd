@@ -6,6 +6,9 @@
 extern SOCKET sockfd[MAX_LISTENSOCK];
 extern int sockfd_used;
 
+#include <netinet/in.h>
+
+
 /*
  * Listens... Than calls protocol()
  */

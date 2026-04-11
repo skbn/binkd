@@ -21,6 +21,12 @@
 
 #include "iphdr.h"
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
 /* Autosense getaddrinfo */
 #if defined(AI_PASSIVE) && defined(EAI_NONAME)
 #define HAVE_GETADDRINFO

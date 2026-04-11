@@ -51,6 +51,8 @@
 #endif
 #include "rfc2553.h"
 
+extern MUTEXSEM lsem;
+
 /* define to enable val's code for -ip checks (default is gul's code) */
 #undef VAL_STYLE
 #ifdef VAL_STYLE

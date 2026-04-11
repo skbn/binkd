@@ -10,6 +10,9 @@
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version. See COPYING.
  */
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
 /*
  * Sets non-blocking mode for a given socket

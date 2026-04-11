@@ -64,7 +64,7 @@
 
 #include "confopt.h"
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) || defined(HAVE_FORK)
 MUTEXSEM hostsem;
 MUTEXSEM resolvsem;
 MUTEXSEM lsem;

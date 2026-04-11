@@ -40,6 +40,12 @@
 #define SHELL (getenv("COMSPEC") ? getenv("COMSPEC") : "command.com")
 #define SHELL_META "\"\'\\%<>|&^@"
 #define SHELLOPT "/c"
+#elif defined(AMIGA)
+/* AmigaOS shell */
+#define SHELL "c:execute"
+#define SHELL_META "\"\'\\*?(){};&|<>"
+#define SHELLOPT ""   /* Amiga no usa -c */
+
 #else
 #error "Unknown platform"
 #endif
