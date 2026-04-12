@@ -197,7 +197,7 @@ int run3 (const char *cmd, int *in, int *out, int *err)
     }
     if (strpbrk(cmd, SHELL_META))
     {
-	  /*shell = SHELL;*/
+	  shell = SHELL;
 #ifdef AMIGA
 	  execl(shell, shell, cmd, (char *)NULL);
 #else
