@@ -1,6 +1,6 @@
 CC = gcc
 
-DEFINES = -DHAVE_FORK -DAMIGA -DHAVE_SNPRINTF -DHAVE_GETOPT -DHAVE_UNISTD_H -DHAVE_SYS_TIME_H -DHAVE_SYS_PARAM_H -DHAVE_SYS_IOCTL_H -DOS="\"Amiga\"" -DHAVE_WAITPID -DHTTPS -DAMIGADOS_4D_OUTBOUND -DHAVE_STDARG_H -DHAVE_VSNPRINTF -I. -Iamiga
+DEFINES = -DHAVE_FORK -DAMIGA -DHAVE_SNPRINTF -DHAVE_GETOPT -DHAVE_UNISTD_H -DHAVE_SYS_TIME_H -DHAVE_SYS_PARAM_H -DHAVE_SYS_IOCTL_H -DHAVE_NETINET_IN_H -DHAVE_NETDB_H -DHAVE_ARPA_INET_H -DHAVE_WAITPID -DHTTPS -DAMIGADOS_4D_OUTBOUND -DHAVE_STDARG_H -DHAVE_VSNPRINTF -DOS="\"Amiga\"" -I. -Iamiga
 
 CFLAGS = $(DEFINES) -Wall -resident -O2
 
@@ -28,7 +28,7 @@ install: all clean
 
 clean:
 	rm -f *.[bo] *.BAK *.core *.obj *.err *~ core
-	rm -f binkd decompress process_tic
+	rm -f binkd decompress process_tic freq_aso
 
 depend Makefile.dep:   Makefile.amiga
 	  $(CC) -MM $(CFLAGS) $(SRCS) $(SYS) | \
