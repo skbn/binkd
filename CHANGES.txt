@@ -10,16 +10,17 @@ iptools.h
 Makefile.amiga
 protocol.c
 protocol.h
-readcfg.c
 README.md
 rfc2553.h
 server.h
 tools.c
 
+readcfg.c	Fix error with -C option and random crashes
+branch.c	Fix some bug with atexit
 inbound.c	Skip mtime para arcmail/pkt/tic/req. By preventing it from requesting the files multiple times, and by not allowing it to send an M_GOT to the server
 
 rfc2553.c	Add variable "int h_errno = 0;" warning bind -- getaddrinfo
-run.c		Added code to execute in an external program from the shell
+run.c		Added code to execute in an external program from the shell and Fix some bugs with console
 sem.h		Add struct EVENTSEM and the declarations of the functions for the missing threads (_InitEventSem, _CleanEventSem, _PostSem, _WaitSem)
 
 server.c	Add extern EVENTSEM and "#if defined(OS2) || defined(AMIGA)", This fixes a bug that caused the socket to close without releasing memory and not recreating it, resulting in a signal #15 error. bind() error and random crash. ermission denied (EACCES/EPERM)

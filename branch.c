@@ -138,7 +138,9 @@ again:
     vfork_setup_child();
     ix_vfork_resume();
     F(arg);
-    _exit(0);  // ← _exit() salta todos los handlers atexit/señales del padre
+	
+	/* Skip all parent handlers */
+    _exit(0);
   }
   else if (rc < 0)
   {
