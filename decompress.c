@@ -92,7 +92,7 @@ int main(void)
                 printf("Decompressed with LZH in inbound: %s\n", entry->d_name);
                 delete_file(path);
             } else {
-                /* Intentar ZIP */
+                /* Try with ZIP */
                 sprintf(cmd, "unzip -o \"%s\" -d \"inbound/\"", path);
                 if (system(cmd) == 0) {
                     printf("Decompressed with ZIP in inbound: %s\n", entry->d_name);

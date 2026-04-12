@@ -44,8 +44,6 @@
 /* AmigaOS shell */
 #define SHELL "c:execute"
 #define SHELL_META "\"\'\\*?(){};&|<>"
-#define SHELLOPT ""   /* Amiga no usa -c */
-
 #else
 #error "Unknown platform"
 #endif
@@ -199,8 +197,12 @@ int run3 (const char *cmd, int *in, int *out, int *err)
     }
     if (strpbrk(cmd, SHELL_META))
     {
+#ifdef AMIGA
+	  execl(shell, shell, cmd, (char *)NULL);
+#else
       shell = SHELL;
       execl(shell, shell, SHELLOPT, cmd, (char *)NULL);
+#endif
     }
     else
     {

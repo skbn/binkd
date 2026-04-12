@@ -55,7 +55,8 @@ static void serv (void *arg)
   void *cperl;
 #endif
 
-#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(DEBUGCHILD)
+/* Evita cirre de sockets compartidos */
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(AMIGA) && !defined(DEBUGCHILD)
   int curfd;
   pidcmgr = 0;
   for (curfd=0; curfd<sockfd_used; curfd++)

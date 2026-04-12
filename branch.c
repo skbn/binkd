@@ -133,19 +133,16 @@ again:
 #endif
 
 #ifdef AMIGA
-  /* this is rather bizzare. this function pretends to be a fork and behaves
-   * like one, but actually it's a kind of a thread. so we'll need semaphores */
-
-  if (!(rc = ix_vfork ()))
+  if (!(rc = ix_vfork()))
   {
-    vfork_setup_child ();
-    ix_vfork_resume ();
-    F (arg);
-    exit (0);
+    vfork_setup_child();
+    ix_vfork_resume();
+    F(arg);
+    _exit(0);  // ← _exit() salta todos los handlers atexit/señales del padre
   }
   else if (rc < 0)
   {
-    Log (1, "ix_vfork: %s", strerror (errno));
+    Log(1, "ix_vfork: %s", strerror(errno));
   }
 #endif
 

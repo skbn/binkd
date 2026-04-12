@@ -832,11 +832,15 @@ BINKD_CONFIG *readcfg (char *path)
   if (!new_config)
   {
     /* Config error. Abort or continue? */
-    if (current_config)
+    /*if (current_config)
     {
       Log(1, "error in configuration, using old config");
       unlock_config_structure(&work_config, 0);
-    }
+    }*/
+	unlock_config_structure(&work_config, 0);
+
+  	if (current_config)
+    	Log(1, "error in configuration, using old config");
   }
 
   return new_config;
