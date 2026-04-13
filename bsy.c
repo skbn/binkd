@@ -52,6 +52,7 @@ static BSY_ADDR *bsy_get_free_cell (void)
   for (lst = bsy_list; lst; lst = lst->next)
     if (FA_ISNULL (&lst->fa))
       break;
+
   if (!lst)
   {
     lst = xalloc (sizeof (BSY_ADDR));
@@ -112,6 +113,7 @@ int bsy_test (FTN_ADDR *fa0, bsy_t bt, BINKD_CONFIG *config)
   char buf[MAXPATHLEN + 1];
 
   ftnaddress_to_filename (buf, fa0, config);
+
   if (*buf)
   {
     strnzcat (buf, bt == F_CSY ? ".csy" : ".bsy", sizeof (buf));

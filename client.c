@@ -114,10 +114,13 @@ static int do_client(BINKD_CONFIG *config)
   if (!config->q_present)
   {
     q_free (SCAN_LISTED, config);
+
     if (config->printq)
       Log (-1, "scan\r");
+
     q_scan (SCAN_LISTED, config);
     config->q_present = 1;
+
     if (config->printq)
     {
       LockSem (&lsem);
@@ -126,14 +129,14 @@ static int do_client(BINKD_CONFIG *config)
       Log (-1, "idle\r");
     }
   }
+
   if (n_clients < config->max_clients)
   {
     if ((r = q_next_node (config)) != 0)
     {
       struct call_args args;
 
-      if (!bsy_test (&r->fa, F_BSY, config) ||
-          !bsy_test (&r->fa, F_CSY, config))
+      if (!bsy_test (&r->fa, F_BSY, config) || !bsy_test (&r->fa, F_CSY, config))
       {
         char szDestAddr[FTN_ADDR_SZ + 1];
 
@@ -141,11 +144,13 @@ static int do_client(BINKD_CONFIG *config)
         Log (4, "%s busy, skipping", szDestAddr);
         return 0; /* go to the next node */
       }
+
       rel_grow_handles (6);
       threadsafe(++n_clients);
       lock_config_structure(config);
       args.node   = r;
       args.config = config;
+
       if ((pid = branch (call, &args, sizeof (args))) < 0)
       {
         unlock_config_structure(config, 0);
@@ -178,6 +183,7 @@ static int do_client(BINKD_CONFIG *config)
             )
       {
         check_child(&n_clients);
+
         if (poll_flag && n_clients <= 0)
         {
           blocksig();
@@ -188,14 +194,19 @@ static int do_client(BINKD_CONFIG *config)
           }
           unblocksig();
         }
+
         SLEEP (need_sleep);
         end_sleep = time(NULL);
+
         if (end_sleep > start_sleep)
           need_sleep -= (int)(end_sleep - start_sleep);
+
         start_sleep = end_sleep;
       }
+
       check_child(&n_clients);
       blocksig();
+
       if (!poll_flag)
         config->q_present = 0;
     }
@@ -271,6 +282,7 @@ void clientmgr (void *arg)
 #endif
       if (config)
         unlock_config_structure(config, 0);
+
       config = lock_current_config();
 #if defined(WITH_PERL) && defined(HAVE_THREADS)
       if (server_flag)
@@ -423,12 +435,14 @@ static int call0 (FTN_NODE *node, BINKD_CONFIG *config)
       cmdline = ed(cmdline, "*I", port, NULL);
       pid = run3(cmdline, &sock_out, &sockfd, NULL);
       free(cmdline);
+
       if (pid != -1)
       {
         Log (4, "connected");
         add_socket(sock_out);
         break;
       }
+
       if (!binkd_exit)
       {
         Log (1, "connection to %s failed");
@@ -465,10 +479,10 @@ static int call0 (FTN_NODE *node, BINKD_CONFIG *config)
           if (ai->ai_family == AF_INET && ai->ai_next != NULL && ai->ai_next->ai_family == AF_INET6)
           {
              aiNewHead = ai->ai_next;
-	     ai->ai_next = aiNewHead->ai_next;
-	     aiNewHead->ai_next = aiHead;
-	     aiHead = aiNewHead;
-	     break;
+	     	 ai->ai_next = aiNewHead->ai_next;
+	     	 aiNewHead->ai_next = aiHead;
+	     	 aiHead = aiNewHead;
+	     	 break;
           }
        }
     }
@@ -480,10 +494,10 @@ static int call0 (FTN_NODE *node, BINKD_CONFIG *config)
           if (ai->ai_family == AF_INET6 && ai->ai_next != NULL && ai->ai_next->ai_family == AF_INET)
           {
              aiNewHead = ai->ai_next;
-	     ai->ai_next = aiNewHead->ai_next;
-	     aiNewHead->ai_next = aiHead;
-	     aiHead = aiNewHead;
-	     break;
+	     	 ai->ai_next = aiNewHead->ai_next;
+	     	 aiNewHead->ai_next = aiHead;
+	     	 aiHead = aiNewHead;
+	     	 break;
           }
        }
     }
@@ -504,6 +518,7 @@ static int call0 (FTN_NODE *node, BINKD_CONFIG *config)
 #endif
           rc = getnameinfo( (struct sockaddr *)&invalidAddresses[j], l, addrbuf, sizeof(addrbuf)
                           , NULL, 0, NI_NUMERICHOST );
+
           if (rc != 0)
             Log(2, "Error in getnameinfo(): %s (%d)", gai_strerror(rc), rc);
           else
@@ -563,6 +578,7 @@ static int call0 (FTN_NODE *node, BINKD_CONFIG *config)
           Log (4, "trying %s [%s]...", host, addrbuf);
         else
           Log (4, "trying %s [%s]:%s...", host, addrbuf, servbuf);
+
         dst_ip = addrbuf;
         strnzcpy (port, servbuf, MAXPORTSTRLEN);
       }
@@ -575,10 +591,12 @@ static int call0 (FTN_NODE *node, BINKD_CONFIG *config)
         src_hints.ai_socktype = SOCK_STREAM;
         src_hints.ai_family = ai->ai_family;
         src_hints.ai_protocol = IPPROTO_TCP;
+
         if ((aiErr = getaddrinfo(config->bindaddr, NULL, &src_hints, &src_ai)) == 0)
         {
           if (bind(sockfd, src_ai->ai_addr, src_ai->ai_addrlen))
             Log(4, "bind: %s", TCPERR());
+
           freeaddrinfo(src_ai);
         }
         else
@@ -589,6 +607,7 @@ static int call0 (FTN_NODE *node, BINKD_CONFIG *config)
             /* otherwise just warn and don't bind() */
             Log(2, "bind -- getaddrinfo: %s (%d)", gai_strerror(aiErr), aiErr);
       }
+
 #if defined(HAVE_FORK) && !defined(HAVE_THREADS)
       if (config->connect_timeout)
       {
@@ -633,6 +652,7 @@ static int call0 (FTN_NODE *node, BINKD_CONFIG *config)
       if (h_connect(sockfd, host, port, config, proxy, socks) != 0) {
         if (!binkd_exit)
           bad_try (&node->fa, TCPERR (), BAD_CALL, config);
+
         del_socket(sockfd);
         soclose (sockfd);
         sockfd = INVALID_SOCKET;

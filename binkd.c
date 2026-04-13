@@ -118,6 +118,7 @@ void chld (int *childcount)
         Log (0, "client manager (pid=%u) exited, retcode %u", pid, WEXITSTATUS(status));
       exit(4);
     }
+
     if (childcount)
       childcount[0]--;
     if (WIFSIGNALED(status))
@@ -453,6 +454,8 @@ int main (int argc, char *argv[])
 #endif
 {
   char tmp[128];
+  struct maskchain *psP = NULL;
+
 #if defined(HAVE_FORK)
   char **saved_argv;
 
@@ -529,11 +532,13 @@ int main (int argc, char *argv[])
     current_config = readcfg (configpath);
     if (!current_config)
       Log (0, "error in configuration, aborting");
+
     if (dumpcfg_flag)
     {
       debug_readcfg ();
       exit(0);
     }
+
     InitLog(current_config->loglevel, current_config->conlog,
             current_config->logpath, current_config->nolog.first);
   }
@@ -629,12 +634,14 @@ int main (int argc, char *argv[])
   signal (SIGCHLD, sighandler);
 #endif
 
-  { /* Create polls and release polls list */
-    struct maskchain *psP;
-    for (psP = psPolls.first; psP; psP = psP->next)
-      poll_node (psP->mask, current_config);
-    simplelist_free(&psPolls.linkpoint, destroy_maskchain);
-  }
+   /* Create polls and release polls list */
+  
+
+  for (psP = psPolls.first; psP; psP = psP->next)
+    poll_node (psP->mask, current_config);
+
+  simplelist_free(&psPolls.linkpoint, destroy_maskchain);
+  
 
   if (no_flag)
     Log (0, "Exit on option '-n'");
@@ -659,23 +666,28 @@ int main (int argc, char *argv[])
       else
         Log (1, "`%s' cannot be parsed as a Fido-style address", remote_node);
     }
+
     if (!remote_addr)
     {
       char *p = getenv("SSH_CONNECTION");
 
       if (p)
       {
-	remote_addr = strdup(p);
-	p = strchr(remote_addr, ' ');
-	if (p) *p = '\0';
+		remote_addr = strdup(p);
+		p = strchr(remote_addr, ' ');
+		if (p) *p = '\0';
       }
     }
+
     /* not using stdin/stdout itself to avoid possible collisions */
     if (inetd_socket_in == -1)
       inetd_socket_in = dup(fileno(stdin));
+
     if (inetd_socket_out == -1)
       inetd_socket_out = dup(fileno(stdout));
-#ifdef UNIX
+
+#if defined(UNIX) || defined(AMIGA)
+    /* ixemul maps /dev/null correctly on AmigaOS */
     tempfd = open("/dev/null", O_RDWR);
 #else
     tempfd = open("nul", O_RDWR);
@@ -730,17 +742,19 @@ int main (int argc, char *argv[])
 	Log (1, "unexpected pid_file: %s: unlinked", current_config->pid_file);
     else
     {
-	int current_log_level = 1;
-	switch ( errno )
-	{
-	   case ENOENT :	/* file not found or null pathname */
-		current_log_level = 8; /* it's ok */
-		break;
-	   default :
-		break;
-	}
-	Log (current_log_level, "unlink_pid_file: %s: %s", current_config->pid_file, strerror (errno));
+		int current_log_level = 1;
+		switch ( errno )
+		{
+		   case ENOENT :	/* file not found or null pathname */
+			current_log_level = 8; /* it's ok */
+			break;
+		   default :
+			break;
+		}
+
+		Log (current_log_level, "unlink_pid_file: %s: %s", current_config->pid_file, strerror (errno));
     }
+
     create_sem_file (current_config->pid_file, 1);
   }
 

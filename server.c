@@ -143,11 +143,31 @@ static int do_server(BINKD_CONFIG *config)
                     (char *) &opt, sizeof opt) == SOCKET_ERROR)
         Log (1, "servmgr setsockopt (SO_REUSEADDR): %s", TCPERR ());
     
-      if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
       {
-        Log(1, "servmgr bind(): %s", TCPERR ());
-        soclose(sockfd[sockfd_used]);
-        return -1;
+#ifdef AMIGA
+        /* ixnet may hold the port briefly after socket close. Retry. */
+        int bind_retries = 6;
+
+        while (bind(sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
+        {
+          if (--bind_retries == 0)
+          {
+			Log(1, "servmgr bind(): %s", TCPERR());
+			soclose(sockfd[sockfd_used]);
+			return -1;
+		  }
+
+          Log(2, "servmgr bind(): %s, retry in 2s...", TCPERR());
+          sleep(2);
+        }
+#else
+        if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
+        {
+			Log(1, "servmgr bind(): %s", TCPERR ());
+			soclose(sockfd[sockfd_used]);
+			return -1;
+		}
+#endif
       }
 
       if (listen (sockfd[sockfd_used], 5) != 0)
@@ -172,6 +192,12 @@ static int do_server(BINKD_CONFIG *config)
 
   setproctitle ("server manager (listen %s)", config->listen.first->port);
 
+  /* Save rescan_delay locally. checkcfg() may free 'config' (old config
+   * is released when usageCount reaches 0 after reload), so we must not
+   * access config->rescan_delay inside the loop after a reload. */
+  {
+  int rescan = config->rescan_delay;
+
   for (;;)
   {
     struct timeval tv;
@@ -187,7 +213,7 @@ static int do_server(BINKD_CONFIG *config)
         maxfd = sockfd[curfd];
     }
     tv.tv_usec = 0;
-    tv.tv_sec  = CHECKCFG_INTERVAL;
+    tv.tv_sec  = rescan;
     unblocksig();
     check_child(&n_servers);
     n = select(maxfd+1, &r, NULL, NULL, &tv);
@@ -196,8 +222,20 @@ static int do_server(BINKD_CONFIG *config)
     { case 0: /* timeout */
         if (checkcfg()) 
         {
+          /* config may have been freed by checkcfg() — read rescan from
+           * the new current_config before returning for restart */
+          {
+			BINKD_CONFIG *nc = lock_current_config();
+            if (nc)
+			{
+				rescan = nc->rescan_delay;
+				unlock_config_structure(nc, 0);
+			}
+          }
+
           for (curfd=0; curfd<sockfd_used; curfd++)
             soclose(sockfd[curfd]);
+
           sockfd_used = 0;
           return 0;
         }
@@ -214,15 +252,39 @@ static int do_server(BINKD_CONFIG *config)
           unblocksig();
           check_child(&n_servers);
           blocksig();
+
           if (checkcfg())
           {
+            {
+			  BINKD_CONFIG *nc = lock_current_config();
+
+              if (nc)
+			  {
+				rescan = nc->rescan_delay;
+				unlock_config_structure(nc, 0);
+			  }
+            }
+
             for (curfd=0; curfd<sockfd_used; curfd++)
               soclose(sockfd[curfd]);
+
             sockfd_used = 0;
             return 0;
           }
           continue;
         }
+#if defined(AMIGA)
+        /* select() failing with ENOTSOCK/EBADF means the ix_vfork child
+         * closed our listen socket. Restart cleanly instead of crashing. */
+        if (TCPERRNO == ENOTSOCK || TCPERRNO == EBADF)
+        {
+          Log(2, "servmgr select(): %s — restarting", TCPERR());
+          for (curfd = 0; curfd < sockfd_used; curfd++)
+            soclose(sockfd[curfd]);
+          sockfd_used = 0;
+          return 0;
+        }
+#endif
         Log (1, "servmgr select(): %s", TCPERR ());
         goto accepterr;
     }
@@ -233,6 +295,7 @@ static int do_server(BINKD_CONFIG *config)
         continue;
 
       client_addr_len = sizeof (client_addr);
+
       if ((new_sockfd = accept (sockfd[curfd], (struct sockaddr *)&client_addr,
                                 &client_addr_len)) == INVALID_SOCKET)
       {
@@ -250,20 +313,15 @@ static int do_server(BINKD_CONFIG *config)
 #endif
         accepterr:
 #if defined(OS2) || defined(AMIGA)
-          /* Buggy external process closed our socket? Or OS/2 bug? */
-          if (save_errno == ENOTSOCK)
+          /* ENOTSOCK: ix_vfork child closed our listen socket fd.
+           * EOPNOTSUPP: socket exists but is no longer in LISTEN state
+           *   (ixnet socket state corrupted after SystemTagList() inherit).
+           * Both cases: restart do_server() cleanly instead of dying. */
+          if (save_errno == ENOTSOCK || save_errno == EOPNOTSUPP)
           {
-            /* BUGFIX: close all open sockets and reset counter before
-             * returning 0 (restart). Without this, do_server() is called
-             * again with sockfd_used != 0, so new sockets are appended at
-             * wrong positions while stale closed descriptors remain in
-             * sockfd[0..old_used-1].  Those stale fds cause the very next
-             * select() to fail with ENOTSOCK again, and the subsequent
-             * bind() to fail with EACCES because the port is still held
-             * by the unreleased old socket.
-             */
             for (curfd = 0; curfd < sockfd_used; curfd++)
               soclose(sockfd[curfd]);
+
             sockfd_used = 0;
             return 0;  /* will force socket re-creation */
           }
@@ -278,6 +336,7 @@ static int do_server(BINKD_CONFIG *config)
         int aiErr;
   
         add_socket(new_sockfd);
+
         /* Was the socket created after close_sockets loop in exitfunc()? */
         if (binkd_exit)
         {
@@ -285,6 +344,7 @@ static int do_server(BINKD_CONFIG *config)
           soclose(new_sockfd);
           continue;
         }
+
         rel_grow_handles (6);
         ext_rand=rand();
         /* never resolve name in here, will be done during session */
@@ -321,6 +381,7 @@ static int do_server(BINKD_CONFIG *config)
       }
     }
   }
+  } /* end rescan block */
 }
 
 void servmgr (void)

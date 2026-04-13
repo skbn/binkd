@@ -23,6 +23,13 @@ static void exitsig (int arg)
 {
   /* Log (0, ...) will call exit(), exit() will call exitlist */
 #if defined(HAVE_FORK) && !defined(HAVE_THREADS)
+  /* Mask further signals immediately so that kill(pidcmgr, SIGTERM)
+   * inside exitfunc() does not re-enter exitsig() on Amiga/Unix. */
+  signal(SIGINT,  SIG_IGN);
+  signal(SIGTERM, SIG_IGN);
+#ifdef SIGHUP
+  signal(SIGHUP,  SIG_IGN);
+#endif
   if (pidcmgr)
     Log (0, "got signal #%i. Killing %i and quitting...", arg, (int) pidcmgr);
   else

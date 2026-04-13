@@ -71,7 +71,8 @@ void close_srvmgr_socket(void)
   int curfd;
 
   for (curfd=0; curfd<sockfd_used; curfd++)
-  { Log (5, "Closing server socket # %i", sockfd[curfd]);
+  {
+	Log (5, "Closing server socket # %i", sockfd[curfd]);
     soclose (sockfd[curfd]);
   }
   sockfd_used = 0;
@@ -86,7 +87,8 @@ void exitfunc (void)
   if (IsNT() && isService()) {
     LockSem(&exitsem);
     if(exitfunc_called_flag)
-    { /* prevent double call exitfunc() at NT service stop sequence */
+    {
+	  /* prevent double call exitfunc() at NT service stop sequence */
       ReleaseSem(&exitsem);
       Log(10, "exitfunc() repeated call, return from exitfunc()");
       return;
@@ -96,11 +98,37 @@ void exitfunc (void)
   }
 #endif
 
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS)
+  /* On Amiga (and Unix with HAVE_FORK), exitfunc() can be called twice:
+   * first from the SIGINT handler (via Log(0) -> exit()), then again when
+   * exitfunc() itself does kill(pidcmgr, SIGTERM) which bounces SIGTERM
+   * back to the parent process.  The second call deadlocks on
+   * LockSem(&config_sem) which the first call already holds.
+   * Use a volatile flag to detect and bail out on reentrant calls. */
+   static volatile int exitfunc_running = 0;
+    if (exitfunc_running)
+      return;   /* reentrant — do nothing, first call cleans up */
+    exitfunc_running = 1;
+  
+#endif
+
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS)
+  /* exitfunc() is not reentrant. On Amiga, kill(pidcmgr,SIGTERM) inside
+   * this function bounces SIGTERM back to the parent which calls exitfunc()
+   * again, deadlocking on LockSem(&config_sem). Guard against this. */
+   {
+   static volatile int running = 0;
+    if (running) return;
+    running = 1;
+   } 
+#endif
+
   Log(7, "exitfunc()");
 
 #if defined(HAVE_THREADS)
   /* exit all threads */
-  { SOCKET h;
+  {
+    SOCKET h;
     int timeout = 0;
     /* wait for threads exit */
     binkd_exit = 1;
@@ -139,7 +167,8 @@ void exitfunc (void)
   }
 #elif defined(HAVE_FORK)
   if (pidcmgr)
-  { int i;
+  {
+    int i;
     i=pidcmgr, pidcmgr=0; /* prevent abort when cmgr exits */
     kill (i, SIGTERM);
     /* sleep (1); */
@@ -156,6 +185,7 @@ void exitfunc (void)
   {
     if (*config->pid_file && pidsmgr == (int) getpid ())
       delete (config->pid_file);
+
     /* completely unload config */
 #if defined(HAVE_FORK) && !defined(HAVE_THREADS)
     unlock_config_structure(config, inetd_flag || (!pidsmgr && pidCmgr == (int) getpid()) || (pidsmgr == (int) getpid()));
@@ -163,6 +193,7 @@ void exitfunc (void)
     unlock_config_structure(config, 1);
 #endif
   }
+
   CleanSem (&config_sem);
   CleanSem (&hostsem);
   CleanSem (&resolvsem);

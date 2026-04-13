@@ -19,6 +19,10 @@
  */
 void setsockopts (SOCKET s);
 
+#if defined(AMIGA)
+void setsockopts_amiga(SOCKET s, int tcpdelay, int so_sndbuf, int so_rcvbuf);
+#endif
+
 /*
  * Find the port number (in the host byte order) by a port number string or
  * a service name. Find_port ("") will return binkp's port from

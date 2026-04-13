@@ -102,7 +102,7 @@ again:
 
 #if defined(HAVE_THREADS) && !defined(DEBUGCHILD)
   #ifdef WITH_PTHREADS
-  { thread_args_t args;
+    thread_args_t args;
     pthread_t tid;
 
     args.F = F;
@@ -125,7 +125,7 @@ again:
     }
     ReleaseSem(&args.mutex);
     CleanSem(&args.mutex);
-  }
+  
   #else
   if ((rc = BEGINTHREAD (F, STACKSIZE, arg)) < 0)
     Log (1, "_beginthread: %s", strerror (errno));
@@ -137,9 +137,13 @@ again:
   {
     vfork_setup_child();
     ix_vfork_resume();
+    /* ix_vfork shares parent memory — reset signal flags so the child
+     * does not consume the parent's pending SIGHUP/SIGCHLD before the
+     * parent can act on them (e.g. config reload triggered by kill -HUP). */
+    got_sighup  = 0;
+    got_sigchld = 0;
     F(arg);
-	
-	/* Skip all parent handlers */
+    /* Skip all parent handlers */
     _exit(0);
   }
   else if (rc < 0)

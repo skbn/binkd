@@ -20,6 +20,10 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifdef AMIGA
+#include <netinet/tcp.h>
+#endif
+
 #include "sys.h"
 #include "Config.h"
 #include "iphdr.h"
@@ -53,11 +57,48 @@ void setsockopts (SOCKET s)
 #endif
 #endif
 
-#if defined(UNIX) || defined(EMX) || defined(AMIGA)
+#if defined(UNIX) || defined(EMX)  /* NOT AMIGA: ixnet sockets are not AmigaDOS fds */
   if (fcntl (s, F_SETFL, O_NONBLOCK) == -1)
     Log (1, "fcntl: %s", strerror (errno));
 #endif
 }
+
+#if defined(AMIGA)
+void setsockopts_amiga(SOCKET s, int tcpdelay, int so_sndbuf, int so_rcvbuf)
+{
+  /* Disable Nagle algorithm: BinkP mixes small control messages with data.
+   * Without TCP_NODELAY each small message waits up to 200ms (Nagle delay),
+   * making sessions 2-5x slower than other BinkP implementations.
+   * All other BinkP mailers (BinkIT, Argus, etc.) set this explicitly. */
+
+	if (tcpdelay)
+	{
+		int nodelay = tcpdelay;
+
+    	if (setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char *)&nodelay, sizeof(nodelay)) < 0)
+	      Log (4, "setsockopt TCP_NODELAY: %s", TCPERR());
+	}
+
+  /* ixnet default TCP buffers are very small (~8KB). Increase them so the
+   * sender does not stall waiting for ACK after every small burst. */
+
+	if (so_sndbuf)
+	{
+		int sndbuf = so_sndbuf;
+
+    	if (setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&sndbuf, sizeof(sndbuf)) < 0)
+	      Log (5, "setsockopt SO_SNDBUF: %s", TCPERR());
+	}
+
+	if (so_rcvbuf)
+	{
+		int rcvbuf = so_rcvbuf;
+
+    	if (setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&rcvbuf, sizeof(rcvbuf)) < 0)
+	      Log (5, "setsockopt SO_RCVBUF: %s", TCPERR());
+	}
+}
+#endif
 
 /*
  * Find the appropriate port string to be used.

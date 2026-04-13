@@ -18,6 +18,11 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef AMIGA
+#include <dos/dos.h>
+#include <dos/dostags.h>
+#include <proto/dos.h>
+#endif
 
 #include "sys.h"
 #include "run.h"
@@ -76,11 +81,13 @@ int run (char *cmd)
     else
       sp="cmd";
   }
+
   cs=(char*)malloc(strlen(sp)+strlen(cmd)+6);
   dw=CREATE_DEFAULT_ERROR_MODE;
   strcpy(cs, sp);
   strcat(cs, " /C ");
   sp=cmd;
+
   if (sp[0]=='@')
   {
     dw|=CREATE_NEW_CONSOLE|CREATE_NEW_PROCESS_GROUP;
@@ -94,6 +101,7 @@ int run (char *cmd)
     else 
       si.lpTitle=sp;
   }
+
   strcat(cs, sp);
   if (!CreateProcess(NULL, cs, NULL, NULL, 0, dw, NULL, NULL, &si, &pi))
     Log (1, "Error in CreateProcess()=%ld", (long)GetLastError());
@@ -109,6 +117,34 @@ int run (char *cmd)
   free(cs);
   CloseHandle(pi.hProcess);
   CloseHandle(pi.hThread);
+#elif defined(AMIGA)
+  /* ixemul system() needs /bin/sh (ADE). fork()+execl() after ix_vfork
+   * is unreliable outside branch.c's controlled setup.
+   * Use AmigaDOS SystemTagList() with NP_Input/NP_Output pointing to NIL:
+   * so the child task does NOT inherit our listen sockets. Without this,
+   * when the child exits AmigaOS closes our socket fds, causing
+   * "Socket operation on non-socket" errors on the next accept()/select(). */
+  {
+    LONG amiga_rc;
+    BPTR nil_in  = Open("NIL:", MODE_OLDFILE);
+    BPTR nil_out = Open("NIL:", MODE_NEWFILE);
+    struct TagItem run_tags[] = {
+        { NP_Input,       (ULONG)nil_in  },
+        { NP_Output,      (ULONG)nil_out },
+        { NP_CloseInput,  TRUE           },
+        { NP_CloseOutput, TRUE           },
+        { NP_ConsoleTask, 0              },
+        { TAG_DONE,       0              }
+    };
+
+    Log (3, "executing `%s'", cmd);
+    amiga_rc = SystemTagList((STRPTR)cmd, run_tags);
+
+    /* NIL: handles are closed by AmigaOS via NP_CloseInput/NP_CloseOutput */
+    rc = (amiga_rc == 0) ? 0 : (int)amiga_rc;
+
+    Log (3, "rc=%i", rc);
+  }
 #else
   Log (3, "executing `%s'", cmd);
   Log (3, "rc=%i", (rc=system (cmd)));
@@ -144,7 +180,7 @@ int run3 (const char *cmd, int *in, int *out, int *err)
 {
   int pid;
   int pin[2], pout[2], perr[2];
-  const char *shell;
+  const char *shell = NULL;
 
   if (in && pipe(pin) == -1)
   {
@@ -166,6 +202,16 @@ int run3 (const char *cmd, int *in, int *out, int *err)
   }
 
 #ifdef HAVE_FORK
+#ifdef AMIGA
+  /* fork() under ixemul outside branch.c's ix_vfork corrupts the memory
+   * allocator, causing Guru Meditations hours later. Pipe tunneling is
+   * not supported on Amiga. */
+  Log(1, "run3: pipe/tunnel not supported on Amiga: %s", cmd);
+  if (in)  close(pin[1]), close(pin[0]);
+  if (out) close(pout[1]), close(pout[0]);
+  if (err) close(perr[1]), close(perr[0]);
+  return -1;
+#else
   pid = fork();
   if (pid == -1)
   {
@@ -197,7 +243,7 @@ int run3 (const char *cmd, int *in, int *out, int *err)
     }
     if (strpbrk(cmd, SHELL_META))
     {
-	  /*shell = SHELL;*/
+	  shell = SHELL;
 #ifdef AMIGA
 	  execl(shell, shell, cmd, (char *)NULL);
 #else
@@ -241,6 +287,7 @@ int run3 (const char *cmd, int *in, int *out, int *err)
     *err = perr[0];
     close(perr[1]);
   }
+#endif /* !AMIGA */
 #else
 
   /* redirect stdin/stdout/stderr takes effect for all threads */
@@ -344,4 +391,3 @@ int run3 (const char *cmd, int *in, int *out, int *err)
   Log (2, "External command '%s' started, pid %i", cmd, pid);
   return pid;
 }
-

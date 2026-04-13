@@ -105,6 +105,16 @@
   #define PID() mypid
 #endif
 
+#ifdef HAVE_FORK
+  #include <signal.h>   /* Needed for SIG_BLOCK used in blocksig()/unblocksig() below */
+  #include <sys/wait.h> /* Needed for WIFEXITED/WEXITSTATUS used in run.c */
+#endif
+
+#ifdef HAVE_FORK
+  #include <signal.h>
+  #include <sys/wait.h>
+#endif
+
 #if defined(HAVE_FORK) && defined(HAVE_SIGPROCMASK) && defined(HAVE_WAITPID) && defined(SIG_BLOCK)
   void switchsignal(int how);
   #define blocksig()     switchsignal(SIG_BLOCK)

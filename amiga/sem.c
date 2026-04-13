@@ -3,8 +3,6 @@
  */
 #include <exec/exec.h>
 #include <proto/exec.h>
-/*#include <inline/strsup.h>*/
-
 #include <sem.h>
 
 extern void Log (int lev, char *s,...);
@@ -80,9 +78,17 @@ int _WaitSem(EVENTSEM *sem, int sec)
     me = FindTask(NULL);
     sem->waiter = me;
 
-    mask = Wait(1UL << sem->sigbit);
+    /* Also wait on SIGBREAKF_CTRL_C so that if PostSem() was called before
+     * we reached Wait() (race window) and no other signal arrives, pressing
+     * Ctrl-C or an external Break still unblocks us instead of hanging.
+     * sec parameter is currently ignored (binkd only uses 0 or 1). */
+    mask = Wait((1UL << sem->sigbit) | SIGBREAKF_CTRL_C);
 
     sem->waiter = NULL;
+
+    /* Return timeout/break indication if only CTRL_C fired */
+    if (!(mask & (1UL << sem->sigbit)) && (mask & SIGBREAKF_CTRL_C))
+        return -1;
 
     return 0;
 }

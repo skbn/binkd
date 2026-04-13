@@ -128,6 +128,12 @@ static int init_protocol (STATE *state, SOCKET socket_in, SOCKET socket_out, FTN
 #endif
   setsockopts (state->s_in  = socket_in);
   setsockopts (state->s_out = socket_out);
+
+#if defined(AMIGA)
+  setsockopts_amiga(socket_in, config->tcp_nodelay, config->so_sndbuf, config->so_rcvbuf);
+  setsockopts_amiga(socket_out, config->tcp_nodelay, config->so_sndbuf, config->so_rcvbuf);
+#endif
+
   TF_ZERO (&state->in);
   TF_ZERO (&state->out);
   TF_ZERO (&state->flo);

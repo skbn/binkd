@@ -215,6 +215,8 @@ void lock_config_structure(BINKD_CONFIG *c)
     c->rescan_delay      = 60;
     c->nettimeout        = DEF_TIMEOUT;
     c->oblksize          = DEF_BLKSIZE;
+	c->tcp_nodelay		 = 0;
+
 #if defined(WITH_ZLIB) || defined(WITH_BZLIB2)
     c->zminsize          = 1024;
     c->zlevel            = 0;
@@ -395,6 +397,13 @@ static KEYWORD keywords[] =
   {"call-delay", read_time, &work_config.call_delay, 1, DONT_CHECK},
   {"timeout", read_time, &work_config.nettimeout, 1, DONT_CHECK},
   {"oblksize", read_int, &work_config.oblksize, MIN_BLKSIZE, MAX_BLKSIZE},
+
+#ifdef AMIGA
+  {"tcp-nodelay", read_bool, &work_config.tcp_nodelay, 0, 0},
+  {"so-sndbuf", read_int, &work_config.so_sndbuf, 0, 65535},
+  {"so-rcvbuf", read_int, &work_config.so_rcvbuf, 0, 65535},
+#endif
+
   {"maxservers", read_int, &work_config.max_servers, 0, DONT_CHECK},
   {"maxclients", read_int, &work_config.max_clients, 0, DONT_CHECK},
   {"inbound", read_string, work_config.inbound, 'd', 0},
