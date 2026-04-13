@@ -898,6 +898,22 @@ int checkcfg(void)
 
   if (!need_reload)
     return 0;
+
+  /* Prevent reload storms: if the config file is saved multiple times in
+   * quick succession (editor atomic writes, multiple rapid edits) binkd
+   * would restart do_server() repeatedly, each time failing bind() because
+   * the previous socket has not been released yet.  Enforce a minimum gap
+   * of 5 seconds between successive reloads. */
+  { static time_t last_reload = 0;
+    time_t now = time(NULL);
+    if (now - last_reload < 5)
+    {
+      Log(5, "checkcfg: reload suppressed (too soon after last reload)");
+      return 0;
+    }
+    last_reload = now;
+  }
+
   /* Reload starting from first file in list */
   Log(2, "Reloading configuration...");
   pc = current_config->config_list.first;
@@ -2334,4 +2350,3 @@ static int read_perlvar (KEYWORD *key, int wordcount, char **words)
   return 1;
 }
 #endif
-

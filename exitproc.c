@@ -166,7 +166,11 @@ void exitfunc (void)
       }
   }
 #elif defined(HAVE_FORK)
-  if (pidcmgr)
+  /* Guard: kill(0, SIGTERM) would signal the whole process group.
+   * pidcmgr==0 in the clientmgr child (it clears it on startup), so
+   * without this check the child's exitfunc() sends SIGTERM to every
+   * process in the group, including the parent. */
+  if (pidcmgr > 0)
   {
     int i;
     i=pidcmgr, pidcmgr=0; /* prevent abort when cmgr exits */
