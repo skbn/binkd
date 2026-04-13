@@ -79,6 +79,7 @@ int _ReleaseSem (void *);
  *    Initialise Event Semaphores.
  */
 
+#ifdef AMIGA
 int _InitEventSem (EVENTSEM *);
 
 /*
@@ -98,6 +99,7 @@ int _WaitSem (EVENTSEM *, int);
  */
 
 int _CleanEventSem (EVENTSEM *);
+#endif
 
 #if defined(WITH_PTHREADS)
   #define InitSem(sem)       pthread_mutex_init(sem, NULL)
