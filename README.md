@@ -12,6 +12,19 @@ Need ADE to compile project with ixemul library.
 
 https://aminet.net/package/dev/gcc/ADE
 
+It no longer requires ADE to be installed for execution, as it doesn't need /bin/sh to run scripts or external programs from binkd.conf. However, it does require ixemul.library and ixnet.library, either in the libs directory or in the same directory as the executable.
+
+The -C option in binkd.conf is completely unsafe; it causes random failures until it finds the error. Avoid using it.
+
+I've attached three programs for your assistance:
+
+decompress, which decompresses incoming files in lha or zip format, if necessary.
+
+process_tic: which processes tic files and places them in the filebox folder.
+
+freq: which generates file requests in ASO mode and places the necessary files in output mode.
+
+
 
 
 non-UNIX:
