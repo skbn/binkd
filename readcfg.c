@@ -215,7 +215,10 @@ void lock_config_structure(BINKD_CONFIG *c)
     c->rescan_delay      = 60;
     c->nettimeout        = DEF_TIMEOUT;
     c->oblksize          = DEF_BLKSIZE;
+
+#ifdef AMIGA
 	c->tcp_nodelay		 = 0;
+#endif
 
 #if defined(WITH_ZLIB) || defined(WITH_BZLIB2)
     c->zminsize          = 1024;

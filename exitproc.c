@@ -32,6 +32,7 @@
 #include "nt/w32tools.h"
 #endif
 
+#if defined(HAVE_THREADS) || defined(AMIGA)
 extern MUTEXSEM hostsem;
 extern MUTEXSEM resolvsem;
 extern MUTEXSEM lsem;
@@ -40,6 +41,7 @@ extern MUTEXSEM varsem;
 extern MUTEXSEM config_sem;
 extern EVENTSEM eothread;
 extern EVENTSEM wakecmgr;
+#endif
 
 int binkd_exit;
 

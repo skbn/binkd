@@ -35,7 +35,9 @@
 #include "tools.h"
 #include "sem.h"
 
+#if defined(HAVE_THREADS) || defined(AMIGA)
 extern MUTEXSEM blsem;
+#endif
 
 /* Write 16-bit integer to file in intel bytes order */
 static int fput16(u16 arg, FILE *file)

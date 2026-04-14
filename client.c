@@ -44,8 +44,10 @@
 #include "rfc2553.h"
 #include "srv_gai.h"
 
+#if defined(HAVE_THREADS) || defined(AMIGA)
 extern MUTEXSEM lsem;
 extern EVENTSEM eothread;
+#endif
 
 static void call (void *arg);
 

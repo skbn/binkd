@@ -51,7 +51,9 @@
 #endif
 #include "rfc2553.h"
 
+#if defined(HAVE_THREADS) || defined(AMIGA)
 extern MUTEXSEM lsem;
+#endif
 
 /* define to enable val's code for -ip checks (default is gul's code) */
 #undef VAL_STYLE

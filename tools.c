@@ -38,7 +38,10 @@
 #include "nt/w32tools.h"
 #endif
 
+#if defined(HAVE_THREADS) || defined(AMIGA)
 extern MUTEXSEM lsem;
+#endif
+
 extern void vLog (int lev, char *s, va_list ap);
 
 /*

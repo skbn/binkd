@@ -39,7 +39,9 @@
 #endif
 #include "rfc2553.h"
 
+#if defined(HAVE_THREADS) || defined(AMIGA)
 extern EVENTSEM eothread;
+#endif
 
 int n_servers = 0;
 int ext_rand = 0;
