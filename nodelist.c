@@ -117,8 +117,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-    if (out != stdout)
-        fprintf(out, "; Generated from %s, domain %s\n", nl_file, domain);
+    /*if (out != stdout)
+        fprintf(out, "; Generated from %s, domain %s\n", nl_file, domain);*/
 
     while (fgets(buf, sizeof(buf), in)) {
         char type[32];
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
     fclose(in);
 
     if (out != stdout) {
-        fprintf(out, "; Total: %ld BinkP nodes\n", count);
+        /*fprintf(out, "; Total: %ld BinkP nodes\n", count);*/
         fclose(out);
     }
 
