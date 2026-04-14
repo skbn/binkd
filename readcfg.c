@@ -899,9 +899,6 @@ int checkcfg(void)
   }
 #endif
 
-  if (!need_reload)
-    return 0;
-
   /* Prevent reload storms and partial-file reads.
    *
    * On AmigaOS (and some Unix editors), config files are written in multiple
@@ -915,28 +912,38 @@ int checkcfg(void)
    * minimum of 5 seconds between successive successful reloads.
    */
   {
-    static time_t last_reload   = 0;   /* time of last successful reload   */
-    static time_t change_seen   = 0;   /* time we first noticed the change  */
-    static time_t stable_mtime  = 0;   /* mtime we are waiting to stabilize */
+    static time_t last_reload = 0;   /* time of last successful reload */
+    static time_t change_seen = 0;   /* time we first noticed the change */
+    static time_t stable_mtime = 0;  /* mtime we are waiting to stabilize */
+	static int reload_pending = 0;   /* persists between calls */
     time_t now = time(NULL);
 
+   /* The loop has already updated pc->mtime, so in the next call
+	* need_reload will be 0 even though we haven't reloaded yet.
+	* reload_pending keeps the reload intent alive.
+	*/
+	if (need_reload) reload_pending = 1;
+
+    if (!reload_pending)
+      return 0;
+
     /* Get the mtime of the primary config file */
-    { struct stat sb2;
+	{ struct stat sb2;
       time_t cur_mtime = 0;
-      if (current_config->config_list.first &&
-          stat(current_config->config_list.first->path, &sb2) == 0)
+
+      if (current_config->config_list.first && stat(current_config->config_list.first->path, &sb2) == 0)
         cur_mtime = sb2.st_mtime;
 
+	  /* mtime just changed (or changed again) — reset the stability clock */
       if (cur_mtime != stable_mtime)
       {
-        /* mtime just changed (or changed again) — reset the stability clock */
         stable_mtime = cur_mtime;
         change_seen  = now;
         Log(5, "checkcfg: config mtime changed, waiting for stability...");
         return 0;
       }
 
-      /* mtime has been stable since change_seen */
+	  /* mtime has been stable since change_seen */
       if (now - change_seen < 2)
       {
         Log(5, "checkcfg: config not yet stable (%lds), waiting...",
@@ -948,11 +955,12 @@ int checkcfg(void)
     /* Enforce minimum gap between reloads to let the OS release sockets */
     if (now - last_reload < 5)
     {
-      Log(5, "checkcfg: reload suppressed (too soon after last reload, %lds)",
-          (long)(now - last_reload));
+      Log(5, "checkcfg: reload suppressed (too soon, %lds)", (long)(now - last_reload));
       return 0;
     }
-    last_reload = now;
+
+    last_reload    = now;
+    reload_pending = 0;   /* Once the intent has been consumed, the reload is executed */
   }
 
   /* Reload starting from first file in list */
