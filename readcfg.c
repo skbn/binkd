@@ -899,6 +899,9 @@ int checkcfg(void)
   }
 #endif
 
+/*if (!need_reload)
+	    return 0;*/
+
   /* Prevent reload storms and partial-file reads.
    *
    * On AmigaOS (and some Unix editors), config files are written in multiple
