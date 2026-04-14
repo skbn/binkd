@@ -25,7 +25,7 @@ ixnet.library 63.1
 ixemul.library 63.1
 
 
-The -C option in binkd.conf is completely unsafe; it causes random failures until it finds the error. Avoid using it.
+FIXED: The -C option in binkd.conf
 
 I've attached three programs for your assistance:
 
