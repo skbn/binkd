@@ -106,12 +106,7 @@
 #endif
 
 #ifdef HAVE_FORK
-  #include <signal.h>   /* Needed for SIG_BLOCK used in blocksig()/unblocksig() below */
-  #include <sys/wait.h> /* Needed for WIFEXITED/WEXITSTATUS used in run.c */
-#endif
-
-#ifdef HAVE_FORK
-  #include <signal.h>
+  #include <signal.h>   /* Needed for SIG_BLOCK/SIG_UNBLOCK and WIFEXITED/WEXITSTATUS */
   #include <sys/wait.h>
 #endif
 

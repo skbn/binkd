@@ -899,16 +899,54 @@ int checkcfg(void)
   if (!need_reload)
     return 0;
 
-  /* Prevent reload storms: if the config file is saved multiple times in
-   * quick succession (editor atomic writes, multiple rapid edits) binkd
-   * would restart do_server() repeatedly, each time failing bind() because
-   * the previous socket has not been released yet.  Enforce a minimum gap
-   * of 5 seconds between successive reloads. */
-  { static time_t last_reload = 0;
+  /* Prevent reload storms and partial-file reads.
+   *
+   * On AmigaOS (and some Unix editors), config files are written in multiple
+   * passes, so binkd may see the mtime change while the file is still being
+   * written.  Attempting to parse an incomplete file gives "unknown keyword"
+   * errors, and rapid repeated mtime changes cause bind() to fail because the
+   * previous listen socket has not been released yet.
+   *
+   * Strategy: after first detecting a change, wait until the mtime has been
+   * stable for at least 2 seconds before actually reloading.  Also enforce a
+   * minimum of 5 seconds between successive successful reloads.
+   */
+  {
+    static time_t last_reload   = 0;   /* time of last successful reload   */
+    static time_t change_seen   = 0;   /* time we first noticed the change  */
+    static time_t stable_mtime  = 0;   /* mtime we are waiting to stabilize */
     time_t now = time(NULL);
+
+    /* Get the mtime of the primary config file */
+    { struct stat sb2;
+      time_t cur_mtime = 0;
+      if (current_config->config_list.first &&
+          stat(current_config->config_list.first->path, &sb2) == 0)
+        cur_mtime = sb2.st_mtime;
+
+      if (cur_mtime != stable_mtime)
+      {
+        /* mtime just changed (or changed again) — reset the stability clock */
+        stable_mtime = cur_mtime;
+        change_seen  = now;
+        Log(5, "checkcfg: config mtime changed, waiting for stability...");
+        return 0;
+      }
+
+      /* mtime has been stable since change_seen */
+      if (now - change_seen < 2)
+      {
+        Log(5, "checkcfg: config not yet stable (%lds), waiting...",
+            (long)(now - change_seen));
+        return 0;
+      }
+    }
+
+    /* Enforce minimum gap between reloads to let the OS release sockets */
     if (now - last_reload < 5)
     {
-      Log(5, "checkcfg: reload suppressed (too soon after last reload)");
+      Log(5, "checkcfg: reload suppressed (too soon after last reload, %lds)",
+          (long)(now - last_reload));
       return 0;
     }
     last_reload = now;
