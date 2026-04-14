@@ -25,17 +25,27 @@ ixnet.library 63.1
 ixemul.library 63.1
 
 
-FIXED: The -C option in binkd.conf
-
 I've attached three programs for your assistance:
 
-decompress, which decompresses incoming files in lha or zip format, if necessary.
+[decompress] which decompresses incoming files in lha or zip format, if necessary.
 
-process_tic: which processes tic files and places them in the filebox folder.
+[freq] which generates file requests in ASO mode and places the necessary files in outbound directory.
+[freq_bso] same but BSO style
 
-freq: which generates file requests in ASO mode and places the necessary files in outbound directory.
+[process_tic] which processes tic files and places them in the filebox folder.
+With --copypublic option, copy the file you receive to a directory named pub/ from PROGDIR
+>> exec "path/process_tic --copypublic" *.tic *.TIC
+>> exec "path/process_tic" *.tic *.TIC
 
+[srifreq] copy of "misc/srifreq" but in c
+Processes file requests arriving at binkd. The files must be in pub/ or use the environment variables:
+SRIFREQ_PUBDIR Directory with public files (default: pub/)
+SRIFREQ_LOG Log file (optional)
 
+>> exec "path/srifreq *S" *.req
+
+[nodelist] FidoNet nodelist compiler for binkd - AmigaOS version in c from "misc/nodelist.pl"
+>> nodelist <nodelist_file> <domain> [<output_file>]
 
 
 non-UNIX:

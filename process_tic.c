@@ -1,5 +1,11 @@
 /* gcc -O2 -noixemul -o process_tic process_tic.c */
-/* Beta 0.1*/
+
+/*
+ * process_tic [inbound [filebox]] [--copypublic]
+ *
+ * exec "process_tic " *.tic *.TIC
+ * exec "process_tic --copypublic" *.tic *.TIC
+ */
 
 #include <stdio.h>
 #include <string.h>
@@ -10,8 +16,8 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
-#define MAX_PATH  512
-#define MAX_LINE  512
+#define MAX_PATH	512
+#define MAX_LINE	512
 
 static int my_toupper(int c)
 {
@@ -24,10 +30,12 @@ static int my_toupper(int c)
 static int my_strnicmp(const char *a, const char *b, int n)
 {
     int i, ca, cb;
+
     for (i = 0; i < n; i++)
     {
         ca = my_toupper((unsigned char)a[i]);
         cb = my_toupper((unsigned char)b[i]);
+
         if (ca != cb) return ca - cb;
         if (ca == 0)  return 0;
     }
@@ -37,6 +45,7 @@ static int my_strnicmp(const char *a, const char *b, int n)
 static void trim_nl(char *s)
 {
     char *p;
+
     p = strchr(s, '\n'); if (p) *p = '\0';
     p = strchr(s, '\r'); if (p) *p = '\0';
 }
@@ -184,7 +193,8 @@ static int parse_area_field(char *line, char *out, int outsize)
     return 1;
 }
 
-static void process_one_tic(const char *ticpath, const char *inbound, const char *filebox)
+static void process_one_tic(const char *ticpath, const char *inbound, const char *filebox,
+                            int copypublic, const char *pubdir)
 {
     FILE *f;
     char line[MAX_LINE];
@@ -252,6 +262,43 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
     if (!ensure_dir(filebox))  return;
     if (!ensure_dir(area_dir)) return;
 
+    /* --copypublic: copy to PROGDIR:pub/ before moving/deleting */
+    if (copypublic && pubdir && pubdir[0])
+    {
+        char pub_dst[MAX_PATH];
+        BPTR src_lock, dst_lock;
+
+        build_path(pub_dst, sizeof(pub_dst), pubdir, file_name);
+
+        if (ensure_dir(pubdir))
+        {
+            /* Use AmigaDOS Copy via a lock - simplest: open/write loop */
+            src_lock = Open((STRPTR)src_path, MODE_OLDFILE);
+
+            if (src_lock)
+            {
+                dst_lock = Open((STRPTR)pub_dst, MODE_NEWFILE);
+
+                if (dst_lock)
+                {
+                    char cbuf[4096];
+                    LONG rd;
+
+                    while ((rd = Read(src_lock, cbuf, sizeof(cbuf))) > 0)
+                        Write(dst_lock, cbuf, rd);
+
+                    Close(dst_lock);
+
+                    printf("  PUB  : copied to %s\n", pub_dst);
+                }
+                else printf("  WARN : cannot create pub copy: %s\n", pub_dst);
+
+                Close(src_lock);
+            }
+            else printf("  WARN : cannot open source for pub copy: %s\n", src_path);
+        }
+    }
+
     if (!move_file(src_path, dst_path))
 		return;
 
@@ -278,42 +325,67 @@ int main(int argc, char *argv[])
     char filebox[MAX_PATH];
     char ticpath[MAX_PATH];
     char progdir[MAX_PATH];
+    char pubdir[MAX_PATH];
+    int  copypublic = 0;
     BPTR proglock;
     BPTR dirlock;
     struct FileInfoBlock *fib;
     int found;
+    int i;
+    char pd[MAX_PATH];
+	BPTR pl;
 
-    if (argc >= 3)
-    {
-        strncpy(inbound, argv[1], sizeof(inbound) - 1);
-        inbound[sizeof(inbound) - 1] = '\0';
+    /* Parse arguments:
+     *   process_tic [inbound [filebox]] [--copypublic]
+     *
+     *   --copypublic  Before deleting the file from inbound, copy it to
+     *                 PROGDIR:pub/ (creating pub/ if needed). This makes
+     *                 received files available to srifreq for file requests.
+     */
+    inbound[0] = '\0'; filebox[0] = '\0'; pubdir[0] = '\0';
 
-        strncpy(filebox, argv[2], sizeof(filebox) - 1);
-        filebox[sizeof(filebox) - 1] = '\0';
+    for (i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--copypublic") == 0) {
+            copypublic = 1;
+        } else if (!inbound[0]) {
+            strncpy(inbound, argv[i], sizeof(inbound)-1);
+            inbound[sizeof(inbound)-1] = '\0';
+        } else if (!filebox[0]) {
+            strncpy(filebox, argv[i], sizeof(filebox)-1);
+            filebox[sizeof(filebox)-1] = '\0';
+        }
     }
-    else
+
+    if (!inbound[0] || !filebox[0])
     {
         proglock = GetProgramDir();
 
-        if (!proglock)
-        {
-            printf("ERROR: GetProgramDir fallo\n");
-            return 1;
-        }
+        if (!proglock) {
+			printf("ERROR: GetProgramDir failed\n");
+			return 1;
+		}
 
-        if (!NameFromLock(proglock, (STRPTR)progdir, sizeof(progdir)))
-        {
+        if (!NameFromLock(proglock, (STRPTR)progdir, sizeof(progdir))) {
             printf("ERROR: NameFromLock failed (IoErr=%ld)\n", (long)IoErr());
             return 1;
         }
 
-        build_path(inbound, sizeof(inbound), progdir, "inbound");
-        build_path(filebox, sizeof(filebox), progdir, "filebox");
+        if (!inbound[0]) build_path(inbound, sizeof(inbound), progdir, "inbound");
+        if (!filebox[0]) build_path(filebox, sizeof(filebox), progdir, "filebox");
     }
+
+    /* pub dir is always relative to PROGDIR: for --copypublic */
+  
+    pl = GetProgramDir();
+
+    if (pl && NameFromLock(pl, (STRPTR)pd, sizeof(pd)))
+	    build_path(pubdir, sizeof(pubdir), pd, "pub");
 
     printf("process_tic - TIC processor AmigaOS\n");
     printf("Inbound : %s\n", inbound);
     printf("Filebox : %s\n", filebox);
+
+    if (copypublic) printf("PubDir  : %s (--copypublic)\n", pubdir);
 
     fib = (struct FileInfoBlock *) AllocMem(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
 
@@ -345,7 +417,7 @@ int main(int argc, char *argv[])
         if (fib->fib_DirEntryType < 0 && is_tic_file(fib->fib_FileName))
         {
             build_path(ticpath, sizeof(ticpath), inbound, fib->fib_FileName);
-            process_one_tic(ticpath, inbound, filebox);
+            process_one_tic(ticpath, inbound, filebox, copypublic, pubdir);
             found++;
         }
     }

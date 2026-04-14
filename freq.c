@@ -1,4 +1,7 @@
 /* gcc -O2 -noixemul -Wall -o freq freq.c */
+/*
+ * Base directory from $BINKD_OUTBOUND or PROGDIR:.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +36,7 @@ int main(int argc, char *argv[])
     sprintf(fname, "%u.%u.%u.%u", zone, net, node, point);
 
     env_outbound = getenv("BINKD_OUTBOUND");
+
     if (env_outbound && *env_outbound) {
         strncpy(base_dir, env_outbound, sizeof(base_dir)-1);
         base_dir[sizeof(base_dir)-1] = '\0';
@@ -53,10 +57,12 @@ int main(int argc, char *argv[])
 	}
     else {
         lock = CreateDir(out_dir);
+
         if (!lock)
 		{
 			printf("Error creating: %s\n", out_dir); return 1;
 		}
+
         UnLock(lock);
     }
 
