@@ -27,7 +27,7 @@ ixnet.library 63.1
 ixemul.library 63.1
 
 
-I've attached three programs for your assistance:
+I've attached six programs for your assistance:
 
 [decompress] which decompresses incoming files in lha or zip format, if necessary.
 
@@ -49,6 +49,8 @@ SRIFREQ_LOG Log file (optional)
 [nodelist] FidoNet nodelist compiler for binkd - AmigaOS version in c from "misc/nodelist.pl"
 >> nodelist <nodelist_file> <domain> [<output_file>]
 
+
+BUGFIXES:
 
 [exitproc.c] — kill(pidcmgr > 0) affects all systems with HAVE_FORK (Unix/Linux, AmigaOS). Windows/OS/2 with threads doesn't fall into this block, but they didn't have the bug either.
 
