@@ -304,10 +304,12 @@ void clientmgr (void *arg)
          * process has separate memory so independent reloads are safe. */
         !poll_flag)
 #ifndef AMIGA
+	{
       checkcfg();
 #else
-	  (void)status;
+	{
 #endif
+	}
   }
 
   Log (5, "downing clientmgr...");
