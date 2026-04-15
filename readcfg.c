@@ -904,6 +904,7 @@ int checkcfg(void)
 	if (!need_reload)
 	    return 0;
 
+#ifdef AMIGA
   /* Prevent reload storms and partial-file reads.
    *
    * On AmigaOS (and some Unix editors), config files are written in multiple
@@ -967,6 +968,7 @@ int checkcfg(void)
     last_reload    = now;
     reload_pending = 0;   /* Once the intent has been consumed, the reload is executed */
   }
+#endif
 
   /* Reload starting from first file in list */
   Log(2, "Reloading configuration...");

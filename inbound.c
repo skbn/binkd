@@ -604,15 +604,8 @@ int inb_test (char *filename, boff_t size, time_t t,
     ren_style = RENAME_BODY;
   }
 
-  /* Skip mtime para arcmail/pkt/tic/req */
   while (stat (fp, &sb) == 0)
   {
-    /* For arcmail, pkt, tic and req the filename already encodes routing
-     * and sequence info, making it content-unique by name.  On AmigaOS,
-     * ixemul utime()/stat() can disagree on mtime due to epoch/timezone
-     * conversion inconsistencies, so skip the mtime check for these types
-     * to prevent re-downloading duplicate copies of the same file. */
-    /*if (sb.st_size == size && ((ispkt(filename) || isarcmail(filename) || istic(filename) || isreq(filename)) || (sb.st_mtime & ~1) == (t & ~1)))*/
     if (sb.st_size == size && (sb.st_mtime & ~1) == (t & ~1))
 
       return 1;

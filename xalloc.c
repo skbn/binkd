@@ -23,7 +23,8 @@ void *xalloc (size_t size)
   if (!p)
     Log (0, "Not enough memory (failed to allocate %lu byte(s))",
 	 (unsigned long) size);
-  memset(p, 0x00, size);
+  memset(p, 0xEE, size);
+
   return p;
 }
 
