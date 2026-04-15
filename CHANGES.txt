@@ -1,36 +1,393 @@
-Errors related to forks and threads have been corrected and header errors in includes, and some missing "extern"
-binkd.c
-binlog.c
-client.c
-client.h
-exitproc.c
-ftnnode.c
-ftnq.c
-iptools.h
-Makefile.amiga
-protocol.c
-protocol.h
-README.md
-rfc2553.h
-server.h
-tools.c
+==========================================================================
+1. Config.h
+==========================================================================
+[ALL]
+PATCHLEVEL bumped from 115 -> 116.
+The number of AmigaOS-specific fixes is substantial enough
+to warrant a new patch level so remote nodes can distinguish builds.
 
-readcfg.c	Fix error with -C option and random crashes
-branch.c	Fix some bug with atexit
-inbound.c	Skip mtime para arcmail/pkt/tic/req. By preventing it from requesting the files multiple times, and by not allowing it to send an M_GOT to the server
+==========================================================================
+2. readcfg.h
+==========================================================================
+[AMIGA]
+Added three new fields to BINKD_CONFIG:
+int tcp_nodelay;
+int so_sndbuf;
+int so_rcvbuf;
 
-rfc2553.c	Add variable "int h_errno = 0;" warning bind -- getaddrinfo
-run.c		Added code to execute in an external program from the shell and Fix some bugs with console
-sem.h		Add struct EVENTSEM and the declarations of the functions for the missing threads (_InitEventSem, _CleanEventSem, _PostSem, _WaitSem)
+==========================================================================
+3. readcfg.c
+==========================================================================
+[AMIGA]
+init_config() >> added default-value initialisation for the three new
+socket fields: tcp_nodelay = 0, so_sndbuf = 0, so_rcvbuf = 0.
 
-server.c	Add extern EVENTSEM and "#if defined(OS2) || defined(AMIGA)", This fixes a bug that caused the socket to close without releasing memory and not recreating it, resulting in a signal #15 error. bind() error and random crash. ermission denied (EACCES/EPERM)
+keyword table >> added three new binkd.conf directives under
+tcp-nodelay	bool
+so-sndbuf	int
+so-rcvbuf	int
 
-amiga:
-rename.c	Fix with rename, which was causing a signal #15 with ixemul causing it to close sockets in server.c, delete destination before renaming
+checkcfg() >> config-reload stability and rate-limiting guard.
 
-sem.c		_InitEventSem, _CleanEventSem, _PostSem, _WaitSem. With these functions added, the remaining ones needed to complete the threading section were also included.
+The upstream code performed the reload immediately on the first
+checkcfg() call that detected an mtime change. On AmigaOS, text
+editors and the shell write config files in multiple passes; binkd
+could parse a truncated or half-written file, log "unknown keyword"
+errors, and then retry again 5 seconds later while the previous
+reload's listen socket was still in TIME_WAIT, causing bind() to
+fail ("Permission denied").
 
-LIBS:
-They come with ADE
-ixemul.library
-ixnet.library
+Eliminates reload storms and prevents bind() failures when
+a config file is written in multiple passes.
+
+[ALL]
+readcfg() error path >> fixed the order of unlock_config_structure()
+and the "using old config" log message.  In the upstream code,
+unlock_config_structure() was called inside "if (current_config)",
+meaning that on parse failure the work_config memory was leaked if
+current_config was NULL (first-run failure).
+Fixed: always call unlock_config_structure(&work_config, 0) before
+deciding whether to log the warning.
+
+==========================================================================
+4. sem.h
+==========================================================================
+[AMIGA]
+Defined the EVENTSEM structure:
+struct Task *waiter;
+ULONG sigbit;
+
+In upstream, EVENTSEM was an opaque void* which made the four
+_InitEventSem/_PostSem/_WaitSem/_CleanEventSem functions impossible
+to implement without internal casts.
+
+Corrected the prototypes of all four EVENTSEM functions to use
+EVENTSEM* instead of void*.
+
+==========================================================================
+5. amiga/sem.c
+==========================================================================
+[AMIGA]
+eplaced a broken #include <inline/strsup.h> with #include <sem.h>.
+
+Implemented all four event-semaphore functions using native AmigaOS
+Signal()/Wait() primitives:
+
+_InitEventSem(sem)
+_CleanEventSem(sem)
+_PostSem(sem)
+_WaitSem(sem, sec)
+
+The upstream stub implementations did nothing, so the
+servmgr/clientmgr synchronisation path was completely broken on
+AmigaOS. binkd would busy-loop or deadlock when one manager tried
+to signal the other.
+
+==========================================================================
+6. amiga/rename.c
+==========================================================================
+[AMIGA]
+Rewrote rename() to handle the case where the destination already
+exists. AmigaOS Rename() fails (unlike POSIX rename() which
+atomically replaces the target).
+
+The new implementation:
+Try Rename(from, to), if it fails, DeleteFile(to) and retry
+Rename(from, to). If the second attempt also fails, set errno = EACCES
+and return -1.
+
+==========================================================================
+7. branch.c
+==========================================================================
+[AMIGA]
+ix_vfork child >> reset got_sighup and got_sigchld to 0 immediately
+after the vfork. ix_vfork() shares the parent's address space entirely.
+If the parent had got_sighup=1 pending (e.g. a SIGHUP arrived just
+before the vfork), the child would see the flag and attempt to
+reload config inside a session handler, corrupting the parent's
+config pointer when the child writes to it via the shared memory.
+
+ix_vfork child >> changed exit(0) -> _exit(0). exit() runs all atexit()
+handlers registered by the parent (log flush, socket close,
+pidfile delete, …).  On ix_vfork shared memory, these handlers would
+close the parent's file descriptors and delete the parent's pid file
+while the parent was still running.  _exit() terminates immediately
+without running atexit handlers.
+
+[ALL]
+Minor formatting >> aligned function body indentation and removed
+a spurious blank line inside the pthread branch.
+
+==========================================================================
+8. breaksig.c  (signal handler)
+==========================================================================
+[ALL]
+In the SIGINT/SIGTERM handler, mask further SIGINT, SIGTERM, and
+SIGHUP signals immediately before any other action.
+
+On AmigaOS (and on Linux), the signal handler can be
+reentered if kill(pidcmgr, SIGTERM) inside exitfunc() bounces
+SIGTERM back to the parent. The additional masking prevents a
+second execution of the handler and avoids a double free or
+double unlink of the pid file.
+
+==========================================================================
+9. exitproc.c
+==========================================================================
+[ALL / AMIGA]
+Added extern declarations for all semaphores (hostsem, resolvsem,
+lsem, blsem, varsem, config_sem, eothread, wakecmgr) under
+#if defined(HAVE_THREADS) || defined(AMIGA)
+
+The AmigaOS build uses the same locking paths as the
+threaded build because ix_vfork shares memory, so the same semaphore
+guard code is needed.
+
+[AMIGA / HAVE_FORK] Added a reentrancy guard (static volatile int
+exitfunc_running) to prevent exitfunc() from being called twice.
+
+SIGINT > Log(0, ) > exit() > exitfunc() > kill(pidcmgr, SIGTERM) >
+> SIGTERM bounces back > exitfunc() again > deadlock on
+LockSem(&config_sem)
+
+The guard detects the second call and returns immediately.
+
+[ALL / HAVE_FORK] Changed "if (pidcmgr)" -> "if (pidcmgr > 0)".
+
+In the ix_vfork child, pidcmgr is 0 (the child clears it on startup).
+Without the > 0 guard, kill(0, SIGTERM) would send SIGTERM to every
+process in the process group, including unrelated processes and the
+parent itself.
+
+==========================================================================
+10. server.c
+==========================================================================
+[ALL / AMIGA]
+Added extern declarations for eothread and EVENTSEM under
+#if defined(HAVE_THREADS) || defined(AMIGA)
+
+[AMIGA]
+bind() retry loop >> when bind() returns EACCES ("Permission denied").
+Retry up to 6 times with a 2-second sleep between attempts.
+
+ixnet holds the port briefly after a socket is closed (there is no
+SO_REUSEADDR equivalent that works reliably on ixnet). After a config
+reload the old listen socket is closed and the new one is opened within
+milliseconds; without retries binkd would exit the servmgr with a
+fatal error.
+
+serv() socket-close guard >> added "!defined(AMIGA)" to the
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS) block that closes
+inherited listen sockets in the child process.
+
+ix_vfork children share the parent's socket table. Closing a socket in
+the child immediately destroys it for the parent as well.
+The parent then gets ENOTSOCK/EBADF on the next select()/accept().
+
+select()/accept() ENOTSOCK and EBADF restart >> added
+#if defined(AMIGA) block that catches these errors in the servmgr
+select() loop and calls do_server() again cleanly instead of
+logging a fatal error.
+
+After an ix_vfork session child exits, AmigaDOS closes
+all fds it inherited, including the parent's listen socket. The
+clean restart re-opens the listen socket without crashing.
+
+EOPNOTSUPP handling in accept(): treated the same as ENOTSOCK
+under #if defined(OS2) || defined(AMIGA)
+
+After SystemTagList() inherits socket handles, ixnet can corrupt
+the internal socket state so that the socket exists but is no longer
+in LISTEN state, returning EOPNOTSUPP.
+
+rescan_delay local copy >> the select() timeout is now stored in a
+local int rescan before the loop starts, and refreshed from
+lock_current_config() after each successful checkcfg() reload.
+
+config->rescan_delay is read-accessed after a reload may have freed
+the old config struct (usageCount reaches 0) accessing a freed struct
+is undefined behaviour and caused intermittent crashes on AmigaOS.
+
+==========================================================================
+11. client.c
+==========================================================================
+[ALL / AMIGA]
+Added extern declarations for lsem, eothread under
+#if defined(HAVE_THREADS) || defined(AMIGA)
+
+[AMIGA]
+The checkcfg() call in the clientmgr loop is skipped on AmigaOS
+#ifndef AMIGA
+
+On AmigaOS ix_vfork(), servmgr and clientmgr share the same address space
+and the same static variables inside checkcfg(). If both call checkcfg()
+concurrently, both will set reload_pending=1 and both will attempt to
+reload the config and re-bind the listen port within the same second.
+The second bind() then fails with "Permission denied" because the first
+bind() has not released the port yet. Since servmgr already calls
+checkcfg() periodically via its select() timeout loop, removing the
+clientmgr call loses no functionality.
+
+[ALL / non-AMIGA]
+On real-fork platforms (Linux, FreeBSD) each process has its own
+copy of the static variables, so both calling checkcfg()
+independently is harmless (cosmetic duplicate log lines).
+
+==========================================================================
+12. iptools.c / iptools.h
+==========================================================================
+[AMIGA]
+Added new function setsockopts_amiga(SOCKET s, int tcpdelay,
+int so_sndbuf, int so_rcvbuf) >> Sets TCP_NODELAY via IPPROTO_TCP
+(disables Nagle algorithm). Sets SO_SNDBUF and SO_RCVBUF on the socket.
+
+Declared in iptools.h under #if defined(AMIGA)
+
+fcntl(FD_CLOEXEC) call excluded from AmigaOS >>
+#if defined(UNIX) || defined(EMX)  (NOT AMIGA)
+ixnet sockets are not AmigaDOS file descriptors. The
+FD_CLOEXEC flag is meaningless and the fcntl() call returns an
+error that was silently ignored but caused confusion.
+
+==========================================================================
+13. protocol.c
+==========================================================================
+[ALL / AMIGA]
+Added extern declaration for lsem under
+#if defined(HAVE_THREADS) || defined(AMIGA)
+
+[AMIGA]
+At the start of a new session (both incoming and outgoing), call
+setsockopts_amiga() with the values from the current config.
+
+==========================================================================
+14. rfc2553.c
+==========================================================================
+[AMIGA]
+Fixed h_errno local variable declaration (added initialiser = 0 to
+silence a compiler warning on ixemul gcc).
+
+dded a numeric IP address fast path in getaddrinfo_impl() >> before
+calling gethostbyname(), try inet_addr() first. If the nodename is a
+dotted decimal address, build the addrinfo result directly without going
+through the resolver.
+    
+ixnet's gethostbyname() fails for numeric addresses (e.g. "192.168.1.1"),
+returning EAI_NONAME. This caused the warning "bind -- getaddrinfo:
+hostname nor servname provided, or not known (-1)" for every outgoing
+connection where the bind address was specified as a numeric IP.
+The fix silences these spurious warnings and avoids an unnecessary
+resolver call.
+
+==========================================================================
+15. rfc2553.h
+==========================================================================
+[AMIGA]
+Added missing system headers required by the ixemul build >>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+==========================================================================
+16. run.c
+==========================================================================
+[AMIGA]
+Added AmigaOS includes for dos/dos.h, dos/dostags.h, proto/dos.h.
+
+Defined SHELL and SHELL_META for AmigaOS (c:execute and a safe
+set of shell metacharacters).
+
+Implemented run_system() for AmigaOS using SystemTagList() with NP_Input
+and NP_Output redirected to NIL:
+     
+ixemul's system() spawns a sub-shell that inherits the parent's file
+descriptors, including the binkd listen socket. When the sub shell exits,
+AmigaOS closes all inherited handles, destroying the parent's socket
+and causing "Socket operation on non-socket" errors on the next
+accept()/select(). Using SystemTagList() with NP_Input/NP_Output=NIL:
+and NP_ConsoleTask=0 ensures the child task never inherits any of
+binkd's socket handles.
+
+==========================================================================
+17. sys.h
+==========================================================================
+[ALL]
+Added #include <signal.h> and #include <sys/wait.h> under #ifdef HAVE_FORK
+These were missing, causing implicit declaration warnings for SIG_BLOCK,
+WIFEXITED, and WEXITSTATUS on some compilers.
+
+[ALL]
+Removed trailing newline discrepancy (cosmetic, fixes "no newline at end
+of file" compiler warnings).
+
+==========================================================================
+18. protocol.h / client.h
+==========================================================================
+[AMIGA]
+Added missing system includes (sys/socket.h, netinet/in.h, netdb.h,
+netinet/tcp.h) required by the ixemul toolchain.
+
+==========================================================================
+19. binlog.c / tools.c
+==========================================================================
+[ALL / AMIGA]
+Added extern declarations for blsem / lsem under
+#if defined(HAVE_THREADS) || defined(AMIGA)
+
+The ix_vfork build needs the same semaphore guards as the threaded build
+to protect the log and binary log files from simultaneous writes by the
+shared memory servmgr and clientmgr.
+
+tools.c >> Added a forward declaration for vLog() so that modules
+compiled in a non standard order do not get implicit-function warnings.
+
+==========================================================================
+20. mkfls/amiga/Makefile
+==========================================================================
+[BUILD / AMIGA]
+Major rewrite of the AmigaOS Makefile.
+
+==========================================================================
+21. mkfls/unix/Makefile.in
+==========================================================================
+[BUILD / UNIX]
+Added -DPROTOTYPES to DEFINES.
+Some system headers on older *nix only expose ANSI prototypes when
+PROTOTYPES is defined. Without it, binkd would fail to compile on
+those platforms.
+
+==========================================================================
+22. New files (AmigaOS-specific utilities)
+==========================================================================
+[AMIGA]
+The following source files were added for AmigaOS specific
+functionality. They are not part of the binkd core and are built as
+separate -noixemul binaries:
+
+decompress.c >> standalone decompressor called by the "exec" hook to
+unpack received *.TUx / *.WEx / *.TEx bundles
+
+process_tic.c >> standalone TIC processor for received filebone files
+
+freq.c >> FidoNet file-request helper
+
+freq_bso.c >> BSO-aware file-request helper
+srifreq.c >> SRIF-based file-request responder
+
+[ALL]
+nodelist.c >> nodelist utility
+
+==========================================================================
+KNOWN REMAINING ISSUES / WORK IN PROGRESS
+==========================================================================
+
+Trying convert ixemul to AmigaOS API............
+
+Remember: ADE ixemul 48.2, binkd ixemul 63.1 which caused random crashes :(
+
+Reload configuration in AmigaOS it's still unstable. I'll debug it
+little by little.
+
+Sorry for my bad english :P
