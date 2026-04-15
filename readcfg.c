@@ -44,7 +44,9 @@
  */
 BINKD_CONFIG  *current_config;
 
+#ifdef AMIGA
 extern struct SignalSemaphore config_sem;
+#endif
 
 /*
  * Temporary static structure for configuration reading

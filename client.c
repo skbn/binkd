@@ -299,8 +299,15 @@ void clientmgr (void *arg)
 #ifdef HAVE_THREADS
         !server_flag &&
 #endif
+        /* On AmigaOS ix_vfork shares memory with servmgr — only servmgr
+         * must call checkcfg(). On real-fork systems (Linux/FreeBSD) each
+         * process has separate memory so independent reloads are safe. */
         !poll_flag)
+#ifndef AMIGA
       checkcfg();
+#else
+	  (void)status;
+#endif
   }
 
   Log (5, "downing clientmgr...");
