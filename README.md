@@ -49,13 +49,10 @@ SRIFREQ_LOG Log file (optional)
 [nodelist] FidoNet nodelist compiler for binkd - AmigaOS version in c from "misc/nodelist.pl"
 >> nodelist <nodelist_file> <domain> [<output_file>]
 
+Also compileable on *nix >> "gcc -O2 -Wall -o nodelist nodelist.c"
 
 BUGFIXES:
-
-[exitproc.c] — kill(pidcmgr > 0) affects all systems with HAVE_FORK (Unix/Linux, AmigaOS). Windows/OS/2 with threads doesn't fall into this block, but they didn't have the bug either.
-
-[readcfg.c] — stability wait mtime affects all systems with -C. The 2-second wait is especially useful on AmigaOS where editors write the file in multiple passes, but it also protects Unix.
-
+Option "-C" to reload config It remains unstable
 
 non-UNIX:
 

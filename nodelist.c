@@ -1,4 +1,5 @@
 /* gcc -O2 -noixemul -Wall -o nodelist nodelist.c */
+/* *NIX gcc -O2 -Wall -o nodelist nodelist.c */
 
 /*
  * FidoNet nodelist compiler for binkd - AmigaOS version (no ixemul)
