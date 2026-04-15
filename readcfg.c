@@ -901,8 +901,8 @@ int checkcfg(void)
   }
 #endif
 
-	/*if (!need_reload)
-	    return 0;*/
+	if (!need_reload)
+	    return 0;
 
   /* Prevent reload storms and partial-file reads.
    *
