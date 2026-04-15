@@ -901,8 +901,8 @@ int checkcfg(void)
   }
 #endif
 
-	/*if (!need_reload)
-	    return 0;*/
+	if (!need_reload)
+	    return 0;
 
   /* Prevent reload storms and partial-file reads.
    *
@@ -922,9 +922,6 @@ int checkcfg(void)
     static time_t stable_mtime = 0;  /* mtime we are waiting to stabilize */
 	static int reload_pending = 0;   /* persists between calls */
     time_t now = time(NULL);
-
-if (!need_reload && !reload_pending)
-    return 0;
 
    /* The loop has already updated pc->mtime, so in the next call
 	* need_reload will be 0 even though we haven't reloaded yet.
