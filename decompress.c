@@ -19,25 +19,64 @@ void strlower(char *s)
 int is_compressible(const char *filename)
 {
     const char *ext;
-    char lext[5];
+    char lext[64];
+    char *dot;
+    char day[4];
+    int i;
 
     ext = strrchr(filename, '.');
-    if (!ext || strlen(ext) < 3) return 0;
 
-    strncpy(lext, ext, 4);
-    lext[4] = '\0';
+    if (!ext) return 0;
+
+    strncpy(lext, ext, sizeof(lext) - 1);
+    lext[sizeof(lext) - 1] = '\0';
     strlower(lext);
 
-    if ((strncmp(lext, ".su", 3) == 0 && strlen(lext) == 4) ||
-        (strncmp(lext, ".mo", 3) == 0 && strlen(lext) == 4) ||
-        (strncmp(lext, ".tu", 3) == 0 && strlen(lext) == 4) ||
-        (strncmp(lext, ".we", 3) == 0 && strlen(lext) == 4) ||
-        (strncmp(lext, ".th", 3) == 0 && strlen(lext) == 4) ||
-        (strncmp(lext, ".fr", 3) == 0 && strlen(lext) == 4) ||
-        (strncmp(lext, ".sa", 3) == 0 && strlen(lext) == 4))
+    /* Strip .000 .001 .002 */
+    dot = strrchr(lext, '.');
+    if (dot && strlen(dot + 1) == 3 && isdigit((unsigned char)dot[1]) && isdigit((unsigned char)dot[2]) && isdigit((unsigned char)dot[3]))
+    {
+        *dot = '\0';
+    }
+
+    /* Now check FIDO day base + optional volume digit/char */
+    /* Extract first 3 chars after '.' */
+    if (lext[0] != '.')
+        return 0;
+
+    day[0] = lext[1];
+    day[1] = lext[2];
+    day[2] = '\0';
+
+    /* Must be letters (mo tu we etc) */
+    for (i = 0; i < 2; i++)
+    {
+        if (!isalpha((unsigned char)day[i]))
+            return 0;
+    }
+
+    /* Accept .mo .mo0 .moA etc */
+    if (strcmp(lext, ".mo") == 0 ||
+        strcmp(lext, ".tu") == 0 ||
+        strcmp(lext, ".we") == 0 ||
+        strcmp(lext, ".th") == 0 ||
+        strcmp(lext, ".fr") == 0 ||
+        strcmp(lext, ".sa") == 0 ||
+        strcmp(lext, ".su") == 0)
     {
         return 1;
     }
+
+    /* FIDO extended: .mo0 .mo1 .thA etc */
+    if ((strlen(lext) == 4) &&
+        lext[0] == '.' &&
+        isalpha((unsigned char)lext[1]) &&
+        isalpha((unsigned char)lext[2]) &&
+        isalnum((unsigned char)lext[3]))
+    {
+        return 1;
+    }
+
     return 0;
 }
 
