@@ -18,63 +18,32 @@ void strlower(char *s)
 /* Check if it's a valid extension */
 int is_compressible(const char *filename)
 {
-    const char *ext;
-    char lext[64];
-    char *dot;
-    char day[4];
-    int i;
+    const char *p;
 
-    ext = strrchr(filename, '.');
+    for (p = filename; *p; p++) {
 
-    if (!ext) return 0;
+		/* Need three chars */
+        if (p[0] == '.' && p[1] && p[2] && p[3])
+        {
+            char a = tolower((unsigned char)p[1]);
+            char b = tolower((unsigned char)p[2]);
+            char c = tolower((unsigned char)p[3]);
 
-    strncpy(lext, ext, sizeof(lext) - 1);
-    lext[sizeof(lext) - 1] = '\0';
-    strlower(lext);
-
-    /* Strip .000 .001 .002 */
-    dot = strrchr(lext, '.');
-    if (dot && strlen(dot + 1) == 3 && isdigit((unsigned char)dot[1]) && isdigit((unsigned char)dot[2]) && isdigit((unsigned char)dot[3]))
-    {
-        *dot = '\0';
-    }
-
-    /* Now check FIDO day base + optional volume digit/char */
-    /* Extract first 3 chars after '.' */
-    if (lext[0] != '.')
-        return 0;
-
-    day[0] = lext[1];
-    day[1] = lext[2];
-    day[2] = '\0';
-
-    /* Must be letters (mo tu we etc) */
-    for (i = 0; i < 2; i++)
-    {
-        if (!isalpha((unsigned char)day[i]))
-            return 0;
-    }
-
-    /* Accept .mo .mo0 .moA etc */
-    if (strcmp(lext, ".mo") == 0 ||
-        strcmp(lext, ".tu") == 0 ||
-        strcmp(lext, ".we") == 0 ||
-        strcmp(lext, ".th") == 0 ||
-        strcmp(lext, ".fr") == 0 ||
-        strcmp(lext, ".sa") == 0 ||
-        strcmp(lext, ".su") == 0)
-    {
-        return 1;
-    }
-
-    /* FIDO extended: .mo0 .mo1 .thA etc */
-    if ((strlen(lext) == 4) &&
-        lext[0] == '.' &&
-        isalpha((unsigned char)lext[1]) &&
-        isalpha((unsigned char)lext[2]) &&
-        isalnum((unsigned char)lext[3]))
-    {
-        return 1;
+            /* validar patrón .xx? */
+            if (isalpha(a) && isalpha(b) && (isalnum(c) || c == '?'))
+            {
+                if ((a == 's' && b == 'u') ||
+                    (a == 'm' && b == 'o') ||
+                    (a == 't' && b == 'u') ||
+                    (a == 'w' && b == 'e') ||
+                    (a == 't' && b == 'h') ||
+                    (a == 'f' && b == 'r') ||
+                    (a == 's' && b == 'a'))
+                {
+                    return 1;
+                }
+            }
+        }
     }
 
     return 0;

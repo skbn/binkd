@@ -11,22 +11,23 @@ int o_rename(char *from, char *to)
 {
     BPTR lock;
     struct FileInfoBlock *fib;
+
     char dir[PATHBUF];
     char base[PATHBUF];
     char newname[PATHBUF];
     const char *s;
     char *slash;
     ULONG max = 0;
+    BPTR dirlock;
     char *d = NULL;
     const char *src = NULL;
     ULONG n = 0;
-    ULONG div = 0;
 
-    /* Try direct rename */
+    /* Try direct rename first */
     if (Rename((STRPTR)from, (STRPTR)to))
         return 0;
 
-    /* Split path (/: or :) */
+    /* Split path */
     slash = strrchr(to, '/');
     if (!slash)
         slash = strrchr(to, ':');
@@ -34,7 +35,6 @@ int o_rename(char *from, char *to)
     if (slash)
     {
         ULONG len = slash - to;
-
         if (len >= PATHBUF) len = PATHBUF - 1;
 
         strncpy(dir, to, len);
@@ -50,68 +50,65 @@ int o_rename(char *from, char *to)
         base[PATHBUF - 1] = '\0';
     }
 
-    /* Open directory */
-    lock = Lock((STRPTR)dir, ACCESS_READ);
-    if (!lock)
+    /* Lock directory */
+    dirlock = Lock((STRPTR)dir, ACCESS_READ);
+    if (!dirlock)
     {
         errno = ENOENT;
         return -1;
     }
 
     fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+
     if (!fib)
     {
-        UnLock(lock);
+        UnLock(dirlock);
         errno = ENOMEM;
         return -1;
     }
 
-    /* Scan directory */
-    if (Examine(lock, fib))
+    /* Scan directory safely under lock */
+    if (Examine(dirlock, fib))
     {
-        while (ExNext(lock, fib))
+        while (ExNext(dirlock, fib))
         {
             if (strncmp(fib->fib_FileName, base, strlen(base)) == 0)
             {
-                const char *p = fib->fib_FileName + strlen(base);
+  				const char *p = NULL;
 
-                if (*p == '.')
+           		if (strncmp(fib->fib_FileName, base, strlen(base)) != 0)
+                    continue;
+	
+         	    p = fib->fib_FileName + strlen(base);
+
+                if (*p != '.') continue;
+                
+                /* .001 style */
+                if (isdigit((UBYTE)p[1]) && isdigit((UBYTE)p[2]) && isdigit((UBYTE)p[3]))
                 {
-                    /* .001 style */
-                    if (isdigit((UBYTE)p[1]) &&
-                        isdigit((UBYTE)p[2]) &&
-                        isdigit((UBYTE)p[3]))
-                    {
-                        unsigned int n =
-                            (p[1] - '0') * 100 +
-                            (p[2] - '0') * 10 +
-                            (p[3] - '0');
+                    n = (p[1] - '0') * 100 + (p[2] - '0') * 10 + (p[3] - '0');
+                    if (n > max) max = n;
+                }
 
-                        if (n > max)
-                            max = n;
-                    }
-
-                    /* .mo0 / .th1 style (FIDO volume) */
-                    if (isdigit((UBYTE)p[1]) &&
-                        !isdigit((UBYTE)p[2]))
-                    {
-                        unsigned int n = p[1] - '0';
-                        if (n > max)
-                            max = n;
-                    }
+                /* FIDO volume style (.mo0 .th1 etc) */
+                if (isdigit((UBYTE)p[1]) && !isdigit((UBYTE)p[2]))
+                {
+                    n = p[1] - '0';
+                    if (n > max) max = n;
                 }
             }
         }
     }
 
     FreeDosObject(DOS_FIB, fib);
-    UnLock(lock);
+    UnLock(dirlock);
 
     /* Build new name */
     d = newname;
     src = to;
     n = max + 1;
-    div = 100;
+
+    if (n > 999) n = 0;
 
     /* Copy base */
     while (*src && (d - newname) < (PATHBUF - 5))
@@ -119,17 +116,14 @@ int o_rename(char *from, char *to)
 
     *d++ = '.';
 
-    if (n > 999) n = 0;
-
-    /* 3-digit manual write */
+    /* Manual 3-digit write */
     *d++ = '0' + (n / 100);
     n %= 100;
     *d++ = '0' + (n / 10);
     *d++ = '0' + (n % 10);
-
     *d = '\0';
 
-    /* Final rename */
+    /* Rename */
     if (Rename((STRPTR)from, (STRPTR)newname))
         return 0;
 
