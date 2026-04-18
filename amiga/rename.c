@@ -4,7 +4,6 @@
 
 #include <string.h>
 #include <stdlib.h> /* atoi */
-#include <stdio.h> /* snprintf */
 
 #define PATHBUF 512
 
