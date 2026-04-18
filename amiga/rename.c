@@ -12,27 +12,30 @@ int o_rename(char *from, char *to)
 {
     BPTR lock;
     struct FileInfoBlock *fib;
-
     char dir[PATHBUF];
     char base[PATHBUF];
     char newname[PATHBUF];
+    const char *s;
     char *slash;
+    ULONG max = 0;
+    char *d = NULL;
+    const char *src = NULL;
+    ULONG n = 0;
+    ULONG div = 0;
 
-    unsigned int max = 0;
-
-    /* Direct attempt */
+    /* Try direct rename */
     if (Rename((STRPTR)from, (STRPTR)to))
         return 0;
 
-    /* Detect separator */
+    /* Split path (/: or :) */
     slash = strrchr(to, '/');
-
     if (!slash)
         slash = strrchr(to, ':');
 
     if (slash)
     {
-        size_t len = slash - to;
+        ULONG len = slash - to;
+
         if (len >= PATHBUF) len = PATHBUF - 1;
 
         strncpy(dir, to, len);
@@ -50,7 +53,6 @@ int o_rename(char *from, char *to)
 
     /* Open directory */
     lock = Lock((STRPTR)dir, ACCESS_READ);
-
     if (!lock)
     {
         errno = ENOENT;
@@ -58,7 +60,6 @@ int o_rename(char *from, char *to)
     }
 
     fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
-
     if (!fib)
     {
         UnLock(lock);
@@ -75,12 +76,30 @@ int o_rename(char *from, char *to)
             {
                 const char *p = fib->fib_FileName + strlen(base);
 
-				/* Find last numeric extension */
                 if (*p == '.')
                 {
-                    unsigned int n = atoi(p + 1);
-                    if (n > max)
-                        max = n;
+                    /* .001 style */
+                    if (isdigit((UBYTE)p[1]) &&
+                        isdigit((UBYTE)p[2]) &&
+                        isdigit((UBYTE)p[3]))
+                    {
+                        unsigned int n =
+                            (p[1] - '0') * 100 +
+                            (p[2] - '0') * 10 +
+                            (p[3] - '0');
+
+                        if (n > max)
+                            max = n;
+                    }
+
+                    /* .mo0 / .th1 style (FIDO volume) */
+                    if (isdigit((UBYTE)p[1]) &&
+                        !isdigit((UBYTE)p[2]))
+                    {
+                        unsigned int n = p[1] - '0';
+                        if (n > max)
+                            max = n;
+                    }
                 }
             }
         }
@@ -89,14 +108,32 @@ int o_rename(char *from, char *to)
     FreeDosObject(DOS_FIB, fib);
     UnLock(lock);
 
-    /* Create new name */
-    snprintf(newname, PATHBUF, "%s.%03u", to, max + 1);
+    /* Build new name */
+    d = newname;
+    src = to;
+    n = max + 1;
+    div = 100;
 
-    /* Rename */
+    /* Copy base */
+    while (*src && (d - newname) < (PATHBUF - 5))
+        *d++ = *src++;
+
+    *d++ = '.';
+
+    if (n > 999) n = 0;
+
+    /* 3-digit manual write */
+    *d++ = '0' + (n / 100);
+    n %= 100;
+    *d++ = '0' + (n / 10);
+    *d++ = '0' + (n % 10);
+
+    *d = '\0';
+
+    /* Final rename */
     if (Rename((STRPTR)from, (STRPTR)newname))
         return 0;
 
     errno = EACCES;
-
     return -1;
 }
