@@ -2,7 +2,7 @@ CC = gcc
 
 DEFINES = -DHAVE_FORK -DAMIGA -DHAVE_SNPRINTF -DHAVE_GETOPT -DHAVE_UNISTD_H -DHAVE_SYS_TIME_H -DHAVE_SYS_PARAM_H -DHAVE_SYS_IOCTL_H -DHAVE_NETINET_IN_H -DHAVE_NETDB_H -DHAVE_ARPA_INET_H -DHAVE_WAITPID -DHAVE_SIGPROCMASK -DHTTPS -DAMIGADOS_4D_OUTBOUND -DHAVE_STDARG_H -DHAVE_VSNPRINTF -DWITH_ZLIB -DOS=\"Amiga\" -I. -Iamiga
 
-CFLAGS  = $(DEFINES) -Wall -resident -O2
+CFLAGS  = $(DEFINES) -Wall -resident -O2 -m68020-60 -msoft-float
 
 SRCS = binkd.c readcfg.c tools.c ftnaddr.c ftnq.c client.c server.c protocol.c bsy.c inbound.c breaksig.c branch.c amiga/rename.c amiga/getfree.c ftndom.c ftnnode.c srif.c pmatch.c readflo.c prothlp.c iptools.c rfc2553.c run.c binlog.c amiga/sem.c exitproc.c getw.c xalloc.c setpttl.c https.c md5b.c crypt.c compress.c
 

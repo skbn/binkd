@@ -1165,9 +1165,18 @@ static int read_domain_info (KEYWORD *key, int wordcount, char **words)
     char *s, *new_dir, *new_path;
     int   z;
 
-    for (s = words[2]; *s && isdigit(*s); s++);
-    if ((*s && !isspace(*s)) || (z = atoi (words[2])) <= 0)
-      return ConfigError("%s: invalid zone", words[2]);
+	/* Zone numbers may be decimal or hexadecimal (e.g. 26a = 618)
+     * strtol with base 16 accepts both: "26a" -> 618, "46" -> 70
+     * Reject only if there are non-hex characters or the value <= 0 */
+    {
+	    char *endp;
+		long lz = strtol(words[2], &endp, 16);
+
+    	if ((*endp && !isspace(*endp)) || lz <= 0)
+      		return ConfigError("%s: invalid zone", words[2]);
+
+	    z = (int)lz;
+    }
 
     new_domain.z[0] = z;
     new_domain.z[1] = 0;
