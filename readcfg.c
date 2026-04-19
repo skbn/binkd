@@ -1165,17 +1165,22 @@ static int read_domain_info (KEYWORD *key, int wordcount, char **words)
     char *s, *new_dir, *new_path;
     int   z;
 
-	/* Zone numbers may be decimal or hexadecimal (e.g. 26a = 618)
-     * strtol with base 16 accepts both: "26a" -> 618, "46" -> 70
-     * Reject only if there are non-hex characters or the value <= 0 */
+    /* Zone numbers: decimal by default, hex when letters are present.
+     * Pure digits (e.g. "46") -> decimal 46.
+     * Mixed hex chars (e.g. "26a") -> hexadecimal 0x26a = 618.
+     * This lets configs use FTN zone 618 as either "618" or "26a". */
     {
-	    char *endp;
-		long lz = strtol(words[2], &endp, 16);
-
-    	if ((*endp && !isspace(*endp)) || lz <= 0)
-      		return ConfigError("%s: invalid zone", words[2]);
-
-	    z = (int)lz;
+      char *endp;
+      long lz;
+      int base = 10;
+      const char *zp;
+      for (zp = words[2]; *zp && !isspace((unsigned char)*zp); zp++)
+        if (isxdigit((unsigned char)*zp) && !isdigit((unsigned char)*zp))
+          { base = 16; break; }
+      lz = strtol(words[2], &endp, base);
+      if ((*endp && !isspace((unsigned char)*endp)) || lz <= 0)
+        return ConfigError("%s: invalid zone", words[2]);
+      z = (int)lz;
     }
 
     new_domain.z[0] = z;
