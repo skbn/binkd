@@ -39,6 +39,7 @@ With --copypublic option, copy the file you receive to a directory named pub/ fr
 >> exec "path/process_tic --copypublic" *.tic *.TIC
 >> exec "path/process_tic" *.tic *.TIC
 
+```
 [srifreq] copy of "misc/srifreq" but in c. SRIF-compatible file-request server for binkd
 
 Usage: srifreq <srif_file> <pub_dir> <log_file> [<aliases_file>]
@@ -54,6 +55,7 @@ NODELIST  pub/NODELIST.ZIP
 FILES     pub/ALLFILES.TXT
 
 binkd.conf example: exec "srifreq *S pub log/srifreq.log aliases.txt" *.req
+```
 
 [nodelist] FidoNet nodelist compiler for binkd - AmigaOS version in c from "misc/nodelist.pl"
 >> nodelist <nodelist_file> <domain> [<output_file>]
