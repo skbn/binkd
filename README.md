@@ -31,13 +31,24 @@ I've attached six programs for your assistance:
 
 [decompress] which decompresses incoming files in lha or zip format, if necessary.
 
+```
 [freq] which generates file requests in ASO mode and places the necessary files in outbound directory.
-[freq_bso] same but BSO style
 
+Usage:freq <outbound_dir> Z:N/NODE[.POINT] <filename>
+```
+```
+[freq_bso] same but BSO style
+Usage: freq_bso <outbound_dir> Z:N/NODE[.POINT] <filename>
+  No point : <outbound>.0ZZ/NNNNNNNN.req
+  Point    : <outbound>.0ZZ/N
+```
+
+```
 [process_tic] which processes tic files and places them in the filebox folder.
 With --copypublic option, copy the file you receive to a directory named pub/ from PROGDIR
 >> exec "path/process_tic --copypublic" *.tic *.TIC
 >> exec "path/process_tic" *.tic *.TIC
+```
 
 ```
 [srifreq] copy of "misc/srifreq" but in c. SRIF-compatible file-request server for binkd
@@ -57,8 +68,11 @@ FILES     pub/ALLFILES.TXT
 binkd.conf example: exec "srifreq *S pub log/srifreq.log aliases.txt" *.req
 ```
 
+```
 [nodelist] FidoNet nodelist compiler for binkd - AmigaOS version in c from "misc/nodelist.pl"
->> nodelist <nodelist_file> <domain> [<output_file>]
+
+Usage: nodelist <nodelist_file> <domain> [<output_file>]
+```
 
 Also compileable on *nix >> "gcc -O2 -Wall -o nodelist nodelist.c"
 
