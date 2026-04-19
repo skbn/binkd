@@ -49,6 +49,9 @@ current_config was NULL (first-run failure).
 Fixed: always call unlock_config_structure(&work_config, 0) before
 deciding whether to log the warning.
 
+The reading of zone numbers in the cfg has been corrected; it now
+reads hexadecimal numbers correctly
+
 ==========================================================================
 4. sem.h
 ==========================================================================
