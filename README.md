@@ -39,26 +39,21 @@ With --copypublic option, copy the file you receive to a directory named pub/ fr
 >> exec "path/process_tic --copypublic" *.tic *.TIC
 >> exec "path/process_tic" *.tic *.TIC
 
-[srifreq] copy of "misc/srifreq" but in c
+[srifreq] copy of "misc/srifreq" but in c. SRIF-compatible file-request server for binkd
 
-SRIF-compatible file-request server for binkd.
+Usage: srifreq <srif_file> <pub_dir> <log_file> [<aliases_file>]
+<srif_file>    SRIF control file passed by binkd (exec "srifreq *S")
+<pub_dir>      directory containing public downloadable files
+<log_file>     log file path (pass "" or - to disable logging)
+<aliases_file> optional file mapping magic names to real paths
 
- Usage: srifreq <srif_file> <pub_dir> <log_file> [<aliases_file>]
+Aliases file format (one alias per line, # = comment):
+MAGIC_NAME  relative/or/absolute/path/to/file
+Example:
+NODELIST  pub/NODELIST.ZIP
+FILES     pub/ALLFILES.TXT
 
-   <srif_file>    SRIF control file passed by binkd (exec "srifreq *S")
-   <pub_dir>      directory containing public downloadable files
-   <log_file>     log file path (pass "" or - to disable logging)
-   <aliases_file> optional file mapping magic names to real paths
-
- Aliases file format (one alias per line, # = comment):
-   MAGIC_NAME  relative/or/absolute/path/to/file
-   Example:
-     NODELIST  pub/NODELIST.ZIP
-     FILES     pub/ALLFILES.TXT
-
- binkd.conf example:
-   exec "srifreq *S pub log/srifreq.log aliases.txt" *.req
-
+binkd.conf example: exec "srifreq *S pub log/srifreq.log aliases.txt" *.req
 
 [nodelist] FidoNet nodelist compiler for binkd - AmigaOS version in c from "misc/nodelist.pl"
 >> nodelist <nodelist_file> <domain> [<output_file>]
