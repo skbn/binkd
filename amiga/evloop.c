@@ -367,7 +367,7 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
     /* Initial outbound attempt before waiting (important for poll -p mode) */
     Log(5, "DEBUG: Initial try_outbound before main loop");
     try_outbound(config);
-    last_rescan = time(NULL); /* Reset timer since we just did an attempt */
+    last_rescan = 0; /* Force immediate retry in first loop iteration */
 
     /* ===== Main loop ===== */
     for (;;)

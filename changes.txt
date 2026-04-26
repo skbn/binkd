@@ -172,6 +172,7 @@ AMIGA-SPECIFIC CHANGES (#ifdef AMIGA / AMIGADOS_4D_OUTBOUND)
 
 amiga/evloop.c:
 - Non-blocking event loop with WaitSelect(), replaces servmgr()/clientmgr()
+- Fixed startup delay: last_rescan=0 after pre-loop try_outbound forces immediate retry in first loop iteration (avoids waiting rescan-delay seconds if DNS failed at startup)
 
 amiga/session.c:
 - Session allocation, accept(), non-blocking connect(), outbound scan
@@ -193,6 +194,7 @@ amiga/dirent.c:
 
 amiga/proto_amiga.c:
 - Non-blocking BinkP protocol (amiga_proto_open, amiga_proto_step, amiga_proto_close)
+- Fixed premature M_EOB: added !state->in.f to EOB condition — prevents sending M_EOB while a remote file is still being received (avoids "M_EOB but N files pending M_GOT" error on the remote side)
 
 --- New Amiga-specific files (.h) ---
 

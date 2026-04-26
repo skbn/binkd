@@ -142,7 +142,7 @@ int amiga_proto_step(STATE *state, int readable, int writable, BINKD_CONFIG *con
     }
 
     /* Nothing left to send — issue EOB */
-    if (!state->out.f && !state->q && !state->local_EOB && state->state != P_NULL && !state->sent_fls)
+    if (!state->out.f && !state->q && !state->local_EOB && state->state != P_NULL && !state->sent_fls && !state->in.f)
     {
         if (!state->delay_EOB || (state->major * 100 + state->minor > 100))
         {
