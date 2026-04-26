@@ -6,6 +6,10 @@
 extern SOCKET sockfd[MAX_LISTENSOCK];
 extern int sockfd_used;
 
+#ifdef AMIGA
+#include <netinet/in.h>
+#endif
+
 /*
  * Listens... Than calls protocol()
  */

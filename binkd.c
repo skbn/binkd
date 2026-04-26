@@ -54,6 +54,10 @@
 #include "unix/daemonize.h"
 #endif
 
+#ifdef AMIGA
+/* amiga/bsdsock.h pulled in via iphdr.h for AMIGA */
+#include "amiga/evloop.h"
+#endif
 #ifdef WIN32
 #include "nt/service.h"
 #include "nt/w32tools.h"
@@ -62,9 +66,11 @@
 #endif
 #endif
 
+#include "bsycleanup.h"
+
 #include "confopt.h"
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) || defined(AMIGA)
 MUTEXSEM hostsem;
 MUTEXSEM resolvsem;
 MUTEXSEM lsem;
@@ -94,9 +100,13 @@ static char *remote_addr, *remote_node;
 char *configpath = NULL;               /* Config file name */
 char **saved_envp;
 
-#ifdef HAVE_FORK
+/* mypid: needed by HAVE_FORK and AMIGA targets */
+#if defined(HAVE_FORK) || defined(AMIGA)
+int mypid;
+#endif
 
-int mypid, got_sighup, got_sigchld;
+#ifdef HAVE_FORK
+int got_sighup, got_sigchld;
 
 void chld (int *childcount)
 {
@@ -195,9 +205,13 @@ void usage (void)
 #endif
 	  "  -C       reload on config change\n"
 	  "  -c       run client only\n"
+#ifndef AMIGA
 	  "  -i       run server on stdin/stdout pipe (by inetd or other)\n"
+#endif
 	  "  -f node  run server protected session with this node\n"
+#ifndef AMIGA
 	  "  -a ip    assume remote address when running with '-i' switch\n"
+#endif
 #if defined(BINKD9X)
 	  "  -t cmd   (start|stop|restart|status|install|uninstall) service(s)\n"
 	  "  -S name  set Win9x service name, all - use all services\n"
@@ -312,12 +326,14 @@ char *parseargs (int argc, char *argv[])
 	    case 'c':
 	      client_flag = 1;
 	      break;
+#ifndef AMIGA
 	    case 'i':
 	      inetd_flag = 1;
 	      break;
 	    case 'a': /* remote IP address */
 	      remote_addr = strdup(optarg);
 	      break;
+#endif
 	    case 'f': /* remote FTN address */
 	      remote_node = strdup(optarg);
 	      break;
@@ -416,6 +432,28 @@ char *parseargs (int argc, char *argv[])
   }
   if (optind<argc)
     cfgfile = argv[optind++];
+
+  /* Validate config file name doesn't look like an FTN address (common mistake) */
+  if (cfgfile && (strchr(cfgfile, ':') || strchr(cfgfile, '@')))
+  {
+    fprintf(stderr, "%s: Error: '%s' looks like an FTN address, not a config file.\n", extract_filename(argv[0]), cfgfile);
+    fprintf(stderr, "Usage: %s [options] <config-file>\n", extract_filename(argv[0]));
+    fprintf(stderr, "       Use -P <address> for polling a specific node (e.g., -P 1:23/456.7)\n");
+    exit(1);
+  }
+
+  /* Check for leftover FTN addresses in extra arguments */
+  while (optind < argc)
+  {
+    char *extra = argv[optind++];
+    if (strchr(extra, ':') || strchr(extra, '@'))
+    {
+      fprintf(stderr, "%s: Error: Unexpected FTN address '%s' in arguments.\n", extract_filename(argv[0]), extra);
+      fprintf(stderr, "       Use -P <address> before the config file to poll a node.\n");
+      exit(1);
+    }
+  }
+
 #ifdef OS2
   if (optind<argc)
   { if ((inetd_socket_in = atoi(argv[argc-1])) == 0 && !isdigit(argv[argc-1][0]))
@@ -536,6 +574,9 @@ int main (int argc, char *argv[])
     }
     InitLog(current_config->loglevel, current_config->conlog,
             current_config->logpath, current_config->nolog.first);
+
+    /* Clean up old .bsy/.csy files at startup */
+    cleanup_old_bsy(current_config);
   }
   else if (verbose_flag)
   {
@@ -665,9 +706,13 @@ int main (int argc, char *argv[])
 
       if (p)
       {
-	remote_addr = strdup(p);
-	p = strchr(remote_addr, ' ');
-	if (p) *p = '\0';
+	       remote_addr = strdup(p);
+	       /* Guard against null pointer dereference if strdup fails */
+	       if (remote_addr)
+	       {
+	          p = strchr(remote_addr, ' ');
+	          if (p) *p = '\0';
+	       }
       }
     }
     /* not using stdin/stdout itself to avoid possible collisions */
@@ -677,6 +722,9 @@ int main (int argc, char *argv[])
       inetd_socket_out = dup(fileno(stdout));
 #ifdef UNIX
     tempfd = open("/dev/null", O_RDWR);
+#elif defined(AMIGA)
+    /* NIL: is the native AmigaDOS null device (no ixemul) */
+    tempfd = open("NIL:", O_RDWR);
 #else
     tempfd = open("nul", O_RDWR);
 #endif
@@ -707,6 +755,15 @@ int main (int argc, char *argv[])
   signal (SIGHUP, sighandler);
 #endif
 
+#ifdef AMIGA
+	/* AmigaOS 3: WaitSelect() loop, no fork/threads */
+	{
+		BINKD_CONFIG *ev_cfg = lock_current_config();
+		amiga_evloop_run(ev_cfg, server_flag, client_flag);
+		unlock_config_structure(ev_cfg, 0);
+		return 0;
+	}
+#else
   if (client_flag && !server_flag)
   {
     clientmgr (0);
@@ -721,7 +778,9 @@ int main (int argc, char *argv[])
   if (client_flag && (pidcmgr = branch (clientmgr, 0, 0)) < 0)
   {
     Log (0, "cannot branch out");
+    exit (1);
   }
+#endif /* !AMIGA */
 
   if (*current_config->pid_file)
   {

@@ -11,10 +11,20 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#if defined(AMIGA)
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#endif
+
 /*
  * Sets non-blocking mode for a given socket
  */
 void setsockopts (SOCKET s);
+
+#if defined(AMIGA)
+void setsockopts_amiga(SOCKET s, int tcpdelay, int so_sndbuf, int so_rcvbuf);
+#endif
 
 /*
  * Find the port number (in the host byte order) by a port number string or

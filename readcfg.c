@@ -44,6 +44,10 @@
  */
 BINKD_CONFIG  *current_config;
 
+#ifdef AMIGA
+extern struct SignalSemaphore config_sem;
+#endif
+
 /*
  * Temporary static structure for configuration reading
  */
@@ -210,9 +214,15 @@ void lock_config_structure(BINKD_CONFIG *c)
     snprintf(c->iport, sizeof(c->iport), "%s", find_port(""));
     snprintf(c->oport, sizeof(c->oport), "%s", find_port(""));
     c->call_delay        = 60;
+    c->no_call_delay     = 0;
     c->rescan_delay      = 60;
     c->nettimeout        = DEF_TIMEOUT;
     c->oblksize          = DEF_BLKSIZE;
+
+#ifdef AMIGA
+	c->tcp_nodelay		 = 0;
+#endif
+
 #if defined(WITH_ZLIB) || defined(WITH_BZLIB2)
     c->zminsize          = 1024;
     c->zlevel            = 0;
@@ -391,8 +401,16 @@ static KEYWORD keywords[] =
   {"oport", read_port, &work_config.oport, 0, 0},
   {"rescan-delay", read_time, &work_config.rescan_delay, 1, DONT_CHECK},
   {"call-delay", read_time, &work_config.call_delay, 1, DONT_CHECK},
+  {"no-call-delay", read_bool, &work_config.no_call_delay, 0, 0},
   {"timeout", read_time, &work_config.nettimeout, 1, DONT_CHECK},
   {"oblksize", read_int, &work_config.oblksize, MIN_BLKSIZE, MAX_BLKSIZE},
+
+#ifdef AMIGA
+  {"tcp-nodelay", read_bool, &work_config.tcp_nodelay, 0, 0},
+  {"so-sndbuf", read_int, &work_config.so_sndbuf, 0, 65535},
+  {"so-rcvbuf", read_int, &work_config.so_rcvbuf, 0, 65535},
+#endif
+
   {"maxservers", read_int, &work_config.max_servers, 0, DONT_CHECK},
   {"maxclients", read_int, &work_config.max_clients, 0, DONT_CHECK},
   {"inbound", read_string, work_config.inbound, 'd', 0},
@@ -666,7 +684,7 @@ static int read_passwords(char *filename)
         exp_ftnaddress (&fa, work_config.pAddr, work_config.nAddr, work_config.pDomains.first);
         pn = add_node (&fa, NULL, password, pkt_pwd, out_pwd, '-', NULL, NULL,
                   NR_USE_OLD, ND_USE_OLD, MD_USE_OLD, RIP_USE_OLD, 
-		  HC_USE_OLD, NP_USE_OLD, NULL, AF_USE_OLD,
+		  HC_USE_OLD, NP_USE_OLD, NC_USE_OLD, NULL, AF_USE_OLD,
 #ifdef BW_LIM
                   BW_DEF, BW_DEF,
 #endif
@@ -830,11 +848,10 @@ BINKD_CONFIG *readcfg (char *path)
   if (!new_config)
   {
     /* Config error. Abort or continue? */
-    if (current_config)
-    {
-      Log(1, "error in configuration, using old config");
-      unlock_config_structure(&work_config, 0);
-    }
+	unlock_config_structure(&work_config, 0);
+
+  	if (current_config)
+    	Log(1, "error in configuration, using old config");
   }
 
   return new_config;
@@ -857,6 +874,16 @@ int checkcfg(void)
     Log (2, "got SIGHUP");
   need_reload = got_sighup;
   got_sighup = 0;
+#elif defined(AMIGA)
+  /* No SIGHUP on AmigaOS: detect config change by mtime */
+  need_reload = 0;
+  if (current_config->config_list.first)
+  {
+    if (stat(current_config->config_list.first->path, &sb) == 0 &&
+        current_config->config_list.first->mtime != 0 &&
+        sb.st_mtime != current_config->config_list.first->mtime)
+      need_reload = 1;
+  }
 #else
   need_reload = 0;
 #endif
@@ -886,8 +913,75 @@ int checkcfg(void)
   }
 #endif
 
-  if (!need_reload)
-    return 0;
+	if (!need_reload)
+	    return 0;
+
+#ifdef AMIGA
+  /* Prevent reload storms and partial-file reads.
+   *
+   * On AmigaOS (and some Unix editors), config files are written in multiple
+   * passes, so binkd may see the mtime change while the file is still being
+   * written.  Attempting to parse an incomplete file gives "unknown keyword"
+   * errors, and rapid repeated mtime changes cause bind() to fail because the
+   * previous listen socket has not been released yet.
+   *
+   * Strategy: after first detecting a change, wait until the mtime has been
+   * stable for at least 2 seconds before actually reloading.  Also enforce a
+   * minimum of 5 seconds between successive successful reloads.
+   */
+  {
+    static time_t last_reload = 0;   /* time of last successful reload */
+    static time_t change_seen = 0;   /* time we first noticed the change */
+    static time_t stable_mtime = 0;  /* mtime we are waiting to stabilize */
+	static int reload_pending = 0;   /* persists between calls */
+    time_t now = time(NULL);
+
+   /* The loop has already updated pc->mtime, so in the next call
+	* need_reload will be 0 even though we haven't reloaded yet.
+	* reload_pending keeps the reload intent alive.
+	*/
+	if (need_reload) reload_pending = 1;
+
+    if (!reload_pending)
+      return 0;
+
+    /* Get the mtime of the primary config file */
+	{ struct stat sb2;
+      time_t cur_mtime = 0;
+
+      if (current_config->config_list.first && stat(current_config->config_list.first->path, &sb2) == 0)
+        cur_mtime = sb2.st_mtime;
+
+	  /* mtime just changed (or changed again) — reset the stability clock */
+      if (cur_mtime != stable_mtime)
+      {
+        stable_mtime = cur_mtime;
+        change_seen  = now;
+        Log(5, "checkcfg: config mtime changed, waiting for stability...");
+        return 0;
+      }
+
+	  /* mtime has been stable since change_seen */
+      if (now - change_seen < 2)
+      {
+        Log(5, "checkcfg: config not yet stable (%lds), waiting...",
+            (long)(now - change_seen));
+        return 0;
+      }
+    }
+
+    /* Enforce minimum gap between reloads to let the OS release sockets */
+    if (now - last_reload < 5)
+    {
+      Log(5, "checkcfg: reload suppressed (too soon, %lds)", (long)(now - last_reload));
+      return 0;
+    }
+
+    last_reload    = now;
+    reload_pending = 0;   /* Once the intent has been consumed, the reload is executed */
+  }
+#endif
+
   /* Reload starting from first file in list */
   Log(2, "Reloading configuration...");
   pc = current_config->config_list.first;
@@ -1125,7 +1219,7 @@ static int read_node_info (KEYWORD *key, int wordcount, char **words)
   char *w[ARGNUM], *tmp, *pkt_pwd, *out_pwd, *pipe;
   int   i, j;
   int   NR_flag = NR_USE_OLD, ND_flag = ND_USE_OLD, HC_flag = HC_USE_OLD,
-        MD_flag = MD_USE_OLD, NP_flag = NP_USE_OLD, restrictIP = RIP_USE_OLD,
+        MD_flag = MD_USE_OLD, NP_flag = NP_USE_OLD, NC_flag = NC_USE_OLD, restrictIP = RIP_USE_OLD,
 	IP_afamily = AF_USE_OLD;
 #ifdef BW_LIM
   long bw_send = BW_DEF, bw_recv = BW_DEF;
@@ -1175,6 +1269,8 @@ static int read_node_info (KEYWORD *key, int wordcount, char **words)
         HC_flag = HC_OFF;
       else if (STRICMP (tmp, "-noproxy") == 0)
         NP_flag = NP_ON;
+      else if (STRICMP (tmp, "-nc") == 0)
+        NC_flag = NC_ON;
 #ifdef BW_LIM
       else if (STRICMP (tmp, "-bw") == 0)
       {
@@ -1258,7 +1354,7 @@ static int read_node_info (KEYWORD *key, int wordcount, char **words)
 
   split_passwords(w[2], &pkt_pwd, &out_pwd);
   pn = add_node (&fa, w[1], w[2], pkt_pwd, out_pwd, (char)(w[3] ? w[3][0] : '-'), w[4], w[5],
-            NR_flag, ND_flag, MD_flag, restrictIP, HC_flag, NP_flag, pipe,
+            NR_flag, ND_flag, MD_flag, restrictIP, HC_flag, NP_flag, NC_flag, pipe,
 	    IP_afamily,
 #ifdef BW_LIM
             bw_send, bw_recv,
@@ -1991,6 +2087,9 @@ static int print_node_info_1 (FTN_NODE *fn, void *arg)
   if (fn->pkt_pwd) pwd_len += strlen(fn->pkt_pwd)+1; else pwd_len += 2;
   if (fn->out_pwd) pwd_len += strlen(fn->out_pwd)+1; else pwd_len += 2;
   pwd = calloc (1, pwd_len+1);
+  /* Guard against null pointer dereference if calloc fails */
+  if (!pwd)
+    return 0;
   strcpy(pwd, fn->pwd);
   if (fn->pkt_pwd != (char*)&(fn->pwd) || fn->out_pwd != (char*)&(fn->pwd)) {
     strcat(strcat(pwd, ","), (fn->pkt_pwd) ? fn->pkt_pwd : "-");
@@ -2324,4 +2423,3 @@ static int read_perlvar (KEYWORD *key, int wordcount, char **words)
   return 1;
 }
 #endif
-

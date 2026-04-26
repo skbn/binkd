@@ -1,0 +1,36 @@
+decompress -- Decompress FTN bundle archives
+
+USAGE:
+  decompress <inbound_dir> <output_dir>
+
+DESCRIPTION:
+  Scans the inbound directory for FTN day-of-week bundle archives and
+  decompresses them to the output directory.
+
+  Recognized archive formats (by magic bytes, not extension):
+  - ZIP files
+  - LZH files
+  - ARC files
+
+  Recognized bundle extensions (case-insensitive):
+  - .SU - Sunday bundle
+  - .MO - Monday bundle
+  - .TU - Tuesday bundle
+  - .WE - Wednesday bundle
+  - .TH - Thursday bundle
+  - .FR - Friday bundle
+  - .SA - Saturday bundle
+
+  Also handles renamed bundles (duplicates):
+  - ABCD1234.SU
+  - ABCD1234.SU.001
+  - ABCD1234.SU.002
+
+EXAMPLES:
+  decompress Work:Inbound Work:Unpacked
+  decompress /var/spool/binkd/inbound /tmp/unpacked
+  decompress C:\Binkd\Inbound C:\Binkd\Unpacked
+  exec "work:fido/decompress work:fido/inbound work:fido/inbound" *.su? *.mo? *.tu? *.we? *.th? *.fr? *.sa? *.SU? *.MO? *.TU? *.WE? *.TH? *.FR? *.SA?
+  
+CONFIGURATION FILE:
+  None. All parameters are command-line arguments.

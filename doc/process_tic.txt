@@ -1,0 +1,45 @@
+process_tic -- Process .tic file announcements
+
+USAGE:
+  process_tic --conf <config_file> [files.tic...]
+
+DESCRIPTION:
+  Processes .tic (Ticker announcement) files from the inbound directory
+  and moves/copies files to their destination filebox or public directory.
+
+  The .tic file is parsed for File, Area, Origin, and From fields.
+  The actual file is moved from inbound to filebox/AreaName/.
+
+  All settings are read from the configuration file.
+
+OPTIONS:
+  --conf <config_file>   Configuration file (required)
+
+CONFIGURATION FILE FORMAT:
+  # Lines starting with # are comments
+  # Blank lines are ignored
+
+  inbound    <path>              Inbound directory (required)
+  filebox    <path>              Filebox destination (required)
+  pubdir     <path>              Public directory for --copy-public
+  logfile    <path>              Log file path
+  ticlog     <path>              TIC processing log
+  filelist   <path>              File list output
+  newfiles   <path>              New files list output
+
+EXAMPLE CONFIG FILE (process_tic.conf):
+  # process_tic.conf - Configuration for TIC processor
+
+  inbound    Work:Inbound
+  filebox    Work:Filebox
+  pubdir     Work:Public
+  logfile    Work:Logs/process_tic.log
+  ticlog     Work:Logs/tic.log
+  filelist   Work:Filebox/filelist.txt
+  newfiles   Work:Filebox/newfiles.txt
+
+EXAMPLES:
+  process_tic --conf process_tic.conf
+  process_tic --conf process_tic.conf inbound/*.tic
+
+  exec "process_tic --conf work:fido/process_tic.conf" *.tic *.TIC

@@ -1,0 +1,32 @@
+nodelist -- Compile FidoNet nodelist to binkd.conf format
+
+USAGE:
+  nodelist <nodelist_file> <domain> [<output_file>]
+
+DESCRIPTION:
+  Reads a FidoNet nodelist and outputs binkd.conf compatible
+  "node" configuration lines.
+
+  Arguments:
+    nodelist_file   Path to the FidoNet nodelist file
+    domain          Domain name for the node entries (e.g., fidonet)
+    output_file     Optional output file (default: stdout)
+
+  Extracts the following flags:
+    IBN[:port] - BinkP protocol flag (Internet BinkP Node)
+    INA:hostname - IP hostname/address
+
+  Output format:
+    node <address>@<domain> <hostname>:<port> -
+
+  The nodelist format is comma-separated:
+    [type,]node_num,name,city,sysop,phone,baud,flag1,flag2,...
+    type = Zone, Region, Host, Hub, Pvt, Hold, Down, Boss (empty = Node)
+
+EXAMPLES:
+  nodelist Work:Fido/nodelist.123 fidonet > binkd-nodes.conf
+  nodelist /etc/fido/nodelist.456 fidonet >> binkd.conf
+  nodelist C:\Fido\NODELIST.001 fidonet C:\Fido\nodes.conf
+
+CONFIGURATION FILE:
+  None. All parameters are command-line arguments.

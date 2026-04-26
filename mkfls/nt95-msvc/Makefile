@@ -327,7 +327,32 @@ PERLDLL=/delayload:perl$(PERLV).dll
 
 BINKDEXE = $(BINKDNAME).exe
 
-all: printinfo makedirs "$(OUTDIR)\$(BINKDEXE)" $(BINKDBSC)
+all: printinfo makedirs "$(OUTDIR)\$(BINKDEXE)" $(BINKDBSC) utils
+
+TOOL_CFLAGS = -nologo -W3 -O2 -DWIN32 -DVISUALCPP -I. -I misc
+TOOL_CC     = $(CC) $(TOOL_CFLAGS)
+
+utils: "$(OUTDIR)\decompress.exe" "$(OUTDIR)\process_tic.exe" "$(OUTDIR)\freq.exe" "$(OUTDIR)\srifreq.exe" "$(OUTDIR)\nodelist.exe"
+
+"$(OUTDIR)\decompress.exe": misc\decompress.c misc\portable.c nt\dirwin32.c
+	@echo Compiling decompress...
+	@$(TOOL_CC) -Fe"$(OUTDIR)\decompress.exe" misc\decompress.c misc\portable.c nt\dirwin32.c
+
+"$(OUTDIR)\process_tic.exe": misc\process_tic.c misc\portable.c nt\dirwin32.c
+	@echo Compiling process_tic...
+	@$(TOOL_CC) -Fe"$(OUTDIR)\process_tic.exe" misc\process_tic.c misc\portable.c nt\dirwin32.c
+
+"$(OUTDIR)\freq.exe": misc\freq.c misc\portable.c
+	@echo Compiling freq...
+	@$(TOOL_CC) -Fe"$(OUTDIR)\freq.exe" misc\freq.c misc\portable.c
+
+"$(OUTDIR)\srifreq.exe": misc\srifreq.c misc\portable.c nt\dirwin32.c
+	@echo Compiling srifreq...
+	@$(TOOL_CC) -Fe"$(OUTDIR)\srifreq.exe" misc\srifreq.c misc\portable.c nt\dirwin32.c
+
+"$(OUTDIR)\nodelist.exe": misc\nodelist.c misc\portable.c
+	@echo Compiling nodelist...
+	@$(TOOL_CC) -Fe"$(OUTDIR)\nodelist.exe" misc\nodelist.c misc\portable.c
 
 printinfo:
 	@echo on

@@ -32,6 +32,17 @@
 #include "nt/w32tools.h"
 #endif
 
+#if defined(HAVE_THREADS) || defined(AMIGA)
+extern MUTEXSEM hostsem;
+extern MUTEXSEM resolvsem;
+extern MUTEXSEM lsem;
+extern MUTEXSEM blsem;
+extern MUTEXSEM varsem;
+extern MUTEXSEM config_sem;
+extern EVENTSEM eothread;
+extern EVENTSEM wakecmgr;
+#endif
+
 int binkd_exit;
 
 #ifdef HAVE_THREADS
@@ -137,6 +148,33 @@ void exitfunc (void)
   }
   close_srvmgr_socket();
 #endif
+
+#ifdef AMIGA
+	/* evloop: single process, no children
+	 * Clean Exec semaphores in safe order before freeing config */
+	close_srvmgr_socket();
+	CleanEventSem(&wakecmgr);
+	CleanEventSem(&eothread);
+	CleanSem(&varsem);
+	CleanSem(&blsem);
+	CleanSem(&lsem);
+	CleanSem(&resolvsem);
+	CleanSem(&hostsem);
+	CleanSem(&config_sem);
+	sock_deinit();
+	nodes_deinit();
+	{
+		BINKD_CONFIG *cfg = lock_current_config();
+		if (cfg)
+			bsy_remove_all(cfg);
+		if (cfg && *cfg->pid_file && pidsmgr == (int)getpid())
+			delete(cfg->pid_file);
+		if (cfg)
+			unlock_config_structure(cfg, 1);
+	}
+	Log(6, "exitfunc: AmigaOS cleanup done");
+	return;
+#endif /* AMIGA */
 
   config = lock_current_config();
   if (config)

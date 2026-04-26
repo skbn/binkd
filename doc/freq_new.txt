@@ -1,0 +1,37 @@
+freq -- Create .req and .clo request files for FidoNet
+
+USAGE:
+  freq [options] <outbound_dir> <Z:N/NODE[.POINT]> <file> [<file>...]
+
+DESCRIPTION:
+  Creates file request (.req) and close (.clo) files in the outbound
+  directory using FidoNet 4D/5D addressing.
+
+  Address format:
+    Zone:Net/Node       - 4D address (e.g., 39:190/101)
+    Zone:Net/Node.Point - 5D address with point (e.g., 39:190/101.1)
+
+  Multiple files can be specified to create multiple request lines.
+
+OPTIONS:
+  --aso                Amiga Style Outbound (default) - flat layout
+                       Format: <outbound>/Z.N.NODE.POINT.req
+
+  --bso                Binkley Style Outbound - hex directory layout
+                       No point: <outbound>.0ZZ/nnnnnnnn.req
+                       Point:   <outbound>.0ZZ/nnnnnnnn.pnt/pppppppp.req
+
+  --password <pw>      Append !pw suffix to each request line
+  --newer-than <t>     Append +<unix_timestamp> (request only if file is newer)
+  --update             Append U flag (update request, checks TRANX)
+
+EXAMPLES:
+  freq Work:Outbound 39:190/101 file.lha
+  freq --aso Work:Outbound 39:190/101.1 readme.txt
+  freq --bso /var/spool/binkd/outbound 2:123/456 door.zip
+  freq --bso C:\Binkd\Outbound 1:100/200 update.lzh
+  freq --password secret --newer-than 1234567890 Work:Outbound 39:190/101 file.zip
+  freq --update Work:Outbound 39:190/101 file1.zip file2.zip file3.zip
+
+CONFIGURATION FILE:
+  None. All parameters are command-line arguments.

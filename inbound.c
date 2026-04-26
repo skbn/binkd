@@ -49,7 +49,9 @@ static int creat_tmp_name (char *s, TFILE *file, FTN_ADDR *from, char *inbound)
   char node[FTN_ADDR_SZ + 1];
 
   strnzcpy (s, inbound, MAXPATHLEN);
-  strnzcat (s, PATH_SEPARATOR, MAXPATHLEN);
+  /* Only add PATH_SEPARATOR if inbound doesn't already end with one */
+  if (strlen(s) > 0 && s[strlen(s) - 1] != PATH_SEPARATOR[0])
+    strnzcat (s, PATH_SEPARATOR, MAXPATHLEN);
   t = s + strlen (s);
   while (1)
   {
@@ -128,7 +130,9 @@ static int find_tmp_name (char *s, TFILE *file, STATE *state, BINKD_CONFIG *conf
   }
 
   strnzcpy (s, inbound, MAXPATHLEN);
-  strnzcat (s, PATH_SEPARATOR, MAXPATHLEN);
+  /* Only add PATH_SEPARATOR if inbound doesn't already end with one */
+  if (strlen(s) > 0 && s[strlen(s) - 1] != PATH_SEPARATOR[0])
+    strnzcat (s, PATH_SEPARATOR, MAXPATHLEN);
   t = s + strlen (s);
   while ((de = readdir (dp)) != 0)
   {
@@ -470,7 +474,9 @@ int inb_done (TFILE *file, STATE *state, BINKD_CONFIG *config)
   }
 
   strnzcpy (real_name, state->inbound, MAXPATHLEN);
-  strnzcat (real_name, PATH_SEPARATOR, MAXPATHLEN);
+  /* Only add PATH_SEPARATOR if inbound doesn't already end with one */
+  if (strlen(real_name) > 0 && real_name[strlen(real_name) - 1] != PATH_SEPARATOR[0])
+    strnzcat (real_name, PATH_SEPARATOR, MAXPATHLEN);
   s = real_name + strlen (real_name);
   strnzcat (real_name, u = makeinboundcase (strdequote (netname), (int)config->inboundcase), MAXPATHLEN);
   free (u);
@@ -541,7 +547,9 @@ int inb_done (TFILE *file, STATE *state, BINKD_CONFIG *config)
         {
           ren_style = RENAME_POSTFIX;
           strnzcpy (real_name, state->inbound, MAXPATHLEN);
-          strnzcat (real_name, PATH_SEPARATOR, MAXPATHLEN);
+          /* Only add PATH_SEPARATOR if inbound doesn't already end with one */
+          if (strlen(real_name) > 0 && real_name[strlen(real_name) - 1] != PATH_SEPARATOR[0])
+            strnzcat (real_name, PATH_SEPARATOR, MAXPATHLEN);
           s = real_name + strlen (real_name);
           strnzcat (real_name, u = makeinboundcase (strdequote (netname), (int)config->inboundcase), MAXPATHLEN);
           free (u);
@@ -591,7 +599,9 @@ int inb_test (char *filename, boff_t size, time_t t,
   struct stat sb;
 
   strnzcpy (fp, inbound, MAXPATHLEN);
-  strnzcat (fp, PATH_SEPARATOR, MAXPATHLEN);
+  /* Only add PATH_SEPARATOR if inbound doesn't already end with one */
+  if (strlen(fp) > 0 && fp[strlen(fp) - 1] != PATH_SEPARATOR[0])
+    strnzcat (fp, PATH_SEPARATOR, MAXPATHLEN);
   s = fp + strlen (fp);
   strnzcat (fp, u = strdequote (filename), MAXPATHLEN);
   free (u);

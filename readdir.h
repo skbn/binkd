@@ -23,6 +23,8 @@
 #elif defined(__MINGW32__)
 #include <dirent.h>
 #include <sys/utime.h>
+#elif defined(AMIGA)
+#include "amiga/dirent.h"
 #else
 #include <dirent.h>
 #include <utime.h>

@@ -34,6 +34,14 @@ typedef HEV  EVENTSEM;
 #include <exec/exec.h>
 typedef struct SignalSemaphore MUTEXSEM;
 
+#ifdef AMIGA
+typedef struct
+{
+	struct Task *waiter;
+	ULONG sigbit;
+} EVENTSEM;
+#endif
+
 #elif defined(WITH_PTHREADS)
 
 #include <pthread.h>
@@ -73,25 +81,27 @@ int _ReleaseSem (void *);
  *    Initialise Event Semaphores.
  */
 
-int _InitEventSem (void *);
+#ifdef AMIGA
+int _InitEventSem (EVENTSEM *);
 
 /*
  *    Post Semaphore.
  */
 
-int _PostSem (void *);
+int _PostSem (EVENTSEM *);
 
 /*
  *    Wait Semaphore.
  */
 
-int _WaitSem (void *, int);
+int _WaitSem (EVENTSEM *, int);
 
 /*
  *    Clean Event Semaphores.
  */
 
-int _CleanEventSem (void *);
+int _CleanEventSem (EVENTSEM *);
+#endif
 
 #if defined(WITH_PTHREADS)
   #define InitSem(sem)       pthread_mutex_init(sem, NULL)

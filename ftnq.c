@@ -1147,7 +1147,8 @@ void remove_try (FTN_ADDR *fa, BINKD_CONFIG *config)
   if (*buf)
   {
     strnzcat (buf, ".try", sizeof (buf));
-    if (stat(buf, &sb) == -1) return;
-    delete (buf);
+    /* Delete only if the file exists */
+    if (stat(buf, &sb) == 0)
+      delete (buf);
   }
 }

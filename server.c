@@ -23,6 +23,10 @@
 #include <sys/wait.h>
 #endif
 
+#ifdef AMIGA
+#include "amiga/bsdsock.h"
+#endif
+
 #include "sys.h"
 #include "iphdr.h"
 #include "readcfg.h"
@@ -39,6 +43,10 @@
 #endif
 #include "rfc2553.h"
 
+#if defined(HAVE_THREADS) || defined(AMIGA)
+extern EVENTSEM eothread;
+#endif
+
 int n_servers = 0;
 int ext_rand = 0;
 
@@ -53,7 +61,8 @@ static void serv (void *arg)
   void *cperl;
 #endif
 
-#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(DEBUGCHILD)
+/* Prevent shared socket closure */
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(AMIGA) && !defined(DEBUGCHILD)
   int curfd;
   pidcmgr = 0;
   for (curfd=0; curfd<sockfd_used; curfd++)
@@ -102,7 +111,11 @@ static int do_server(BINKD_CONFIG *config)
   /* setup hints for getaddrinfo */
   memset((void *)&hints, 0, sizeof(hints));
   hints.ai_flags = AI_PASSIVE;
+#ifdef AMIGA
+  hints.ai_family = PF_INET;  /* AmigaOS 3 does not support IPv6 */
+#else
   hints.ai_family = PF_UNSPEC;
+#endif
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
 
@@ -140,11 +153,31 @@ static int do_server(BINKD_CONFIG *config)
                     (char *) &opt, sizeof opt) == SOCKET_ERROR)
         Log (1, "servmgr setsockopt (SO_REUSEADDR): %s", TCPERR ());
     
-      if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
       {
-        Log(1, "servmgr bind(): %s", TCPERR ());
-        soclose(sockfd[sockfd_used]);
-        return -1;
+#ifdef AMIGA
+        /* bsdsocket may hold the port briefly after socket close. Retry */
+        int bind_retries = 6;
+
+        while (bind(sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
+        {
+          if (--bind_retries == 0)
+          {
+			Log(1, "servmgr bind(): %s", TCPERR());
+			soclose(sockfd[sockfd_used]);
+			return -1;
+		  }
+
+          Log(2, "servmgr bind(): %s, retry in 2s...", TCPERR());
+          sleep(2);
+        }
+#else
+        if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
+        {
+			Log(1, "servmgr bind(): %s", TCPERR ());
+			soclose(sockfd[sockfd_used]);
+			return -1;
+		}
+#endif
       }
       if (listen (sockfd[sockfd_used], 5) != 0)
       {
@@ -168,6 +201,12 @@ static int do_server(BINKD_CONFIG *config)
 
   setproctitle ("server manager (listen %s)", config->listen.first->port);
 
+  /* Save rescan_delay locally. checkcfg() may free 'config' (old config
+   * is released when usageCount reaches 0 after reload), so we must not
+   * access config->rescan_delay inside the loop after a reload */
+  {
+  int rescan = config->rescan_delay;
+
   for (;;)
   {
     struct timeval tv;
@@ -183,7 +222,7 @@ static int do_server(BINKD_CONFIG *config)
         maxfd = sockfd[curfd];
     }
     tv.tv_usec = 0;
-    tv.tv_sec  = CHECKCFG_INTERVAL;
+    tv.tv_sec  = rescan;
     unblocksig();
     check_child(&n_servers);
     n = select(maxfd+1, &r, NULL, NULL, &tv);
@@ -192,8 +231,20 @@ static int do_server(BINKD_CONFIG *config)
     { case 0: /* timeout */
         if (checkcfg()) 
         {
+          /* config may have been freed by checkcfg() — read rescan from
+           * the new current_config before returning for restart */
+          {
+			BINKD_CONFIG *nc = lock_current_config();
+            if (nc)
+			{
+				rescan = nc->rescan_delay;
+				unlock_config_structure(nc, 0);
+			}
+          }
+
           for (curfd=0; curfd<sockfd_used; curfd++)
             soclose(sockfd[curfd]);
+
           sockfd_used = 0;
           return 0;
         }
@@ -210,15 +261,39 @@ static int do_server(BINKD_CONFIG *config)
           unblocksig();
           check_child(&n_servers);
           blocksig();
+
           if (checkcfg())
           {
+            {
+			  BINKD_CONFIG *nc = lock_current_config();
+
+              if (nc)
+			  {
+				rescan = nc->rescan_delay;
+				unlock_config_structure(nc, 0);
+			  }
+            }
+
             for (curfd=0; curfd<sockfd_used; curfd++)
               soclose(sockfd[curfd]);
+
             sockfd_used = 0;
             return 0;
           }
           continue;
         }
+#if defined(AMIGA)
+        /* select() failing with ENOTSOCK/EBADF: listen socket lost
+         * Restart cleanly instead of crashing */
+        if (TCPERRNO == ENOTSOCK || TCPERRNO == EBADF)
+        {
+          Log(2, "servmgr select(): %s — restarting", TCPERR());
+          for (curfd = 0; curfd < sockfd_used; curfd++)
+            soclose(sockfd[curfd]);
+          sockfd_used = 0;
+          return 0;
+        }
+#endif
         Log (1, "servmgr select(): %s", TCPERR ());
         goto accepterr;
     }
@@ -245,10 +320,17 @@ static int do_server(BINKD_CONFIG *config)
             continue;
 #endif
         accepterr:
-#ifdef OS2
-          /* Buggy external process closed our socket? Or OS/2 bug? */
-          if (save_errno == ENOTSOCK)
+#if defined(OS2) || defined(AMIGA)
+          /* ENOTSOCK/EOPNOTSUPP: listen socket lost or no longer valid
+           * Restart do_server() cleanly instead of dying */
+          if (save_errno == ENOTSOCK || save_errno == EOPNOTSUPP)
+          {
+            for (curfd = 0; curfd < sockfd_used; curfd++)
+              soclose(sockfd[curfd]);
+
+            sockfd_used = 0;
             return 0;  /* will force socket re-creation */
+          }
 #endif
           return -1;
         }
@@ -303,6 +385,7 @@ static int do_server(BINKD_CONFIG *config)
       }
     }
   }
+  } /* end rescan block */
 }
 
 void servmgr (void)

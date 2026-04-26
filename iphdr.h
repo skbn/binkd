@@ -124,9 +124,17 @@ void ReleaseErrorList(void);
   #define TCPERRNO errno
   #define TCPERR_WOULDBLOCK EWOULDBLOCK
   #define TCPERR_AGAIN EAGAIN
-  #define sock_init() 0
-  #define sock_deinit()
-  #define soclose(h) close(h)
+  #ifdef AMIGA
+    /* AmigaOS 3: open bsdsocket.library via amiga/bsdsock.c */
+    #include "amiga/bsdsock.h"
+    #define sock_init()   amiga_sock_init()
+    #define sock_deinit() amiga_sock_cleanup()
+    #define soclose(h)    CloseSocket(h)
+  #else
+    #define sock_init()   0
+    #define sock_deinit()
+    #define soclose(h)    close(h)
+  #endif
 #endif
 
 #if !defined(WIN32)

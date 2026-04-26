@@ -46,6 +46,16 @@ int set_break_handlers (void)
 {
   atexit (exitfunc);
 
+#ifdef AMIGA
+  /* AmigaOS / libnix: signal() maps SIGINT -> SIGBREAKF_CTRL_C
+   * Register exitsig() so that Ctrl+C sets binkd_exit=1 even when
+   * the process is NOT blocked inside WaitSelect() (e.g. during disk
+   * I/O).  When inside WaitSelect(), amiga_select_wrap() in bsdsock.h
+   * detects the break and sets binkd_exit=1 directly without going
+   * through this signal handler. */
+  signal (SIGINT,  exitsig);
+  signal (SIGTERM, exitsig);
+#else
 #ifdef SIGBREAK
   signal (SIGBREAK, exitsig);
 #endif
@@ -58,5 +68,6 @@ int set_break_handlers (void)
 #ifdef SIGTERM
   signal (SIGTERM, exitsig);
 #endif
+#endif /* AMIGA */
   return 1;
 }

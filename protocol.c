@@ -45,11 +45,18 @@
 #include "md5b.h"
 #include "crypt.h"
 #include "compress.h"
+#ifdef AMIGA
+#include "amiga/proto_amiga.h"
+#endif
 
 #ifdef WITH_PERL
 #include "perlhooks.h"
 #endif
 #include "rfc2553.h"
+
+#if defined(HAVE_THREADS) || defined(AMIGA)
+extern MUTEXSEM lsem;
+#endif
 
 /* define to enable val's code for -ip checks (default is gul's code) */
 #undef VAL_STYLE
@@ -63,7 +70,7 @@ static char *scommand[] = {"NUL", "ADR", "PWD", "FILE", "OK", "EOB",
 /*
  * Fills <<state>> with initial values, allocates buffers, etc.
  */
-static int init_protocol (STATE *state, SOCKET socket_in, SOCKET socket_out, FTN_NODE *to, FTN_ADDR *fa, BINKD_CONFIG *config)
+int init_protocol (STATE *state, SOCKET socket_in, SOCKET socket_out, FTN_NODE *to, FTN_ADDR *fa, BINKD_CONFIG *config)
 {
   char val[4];
   socklen_t lval;
@@ -126,6 +133,12 @@ static int init_protocol (STATE *state, SOCKET socket_in, SOCKET socket_out, FTN
 #endif
   setsockopts (state->s_in  = socket_in);
   setsockopts (state->s_out = socket_out);
+
+#if defined(AMIGA)
+  setsockopts_amiga(socket_in, config->tcp_nodelay, config->so_sndbuf, config->so_rcvbuf);
+  setsockopts_amiga(socket_out, config->tcp_nodelay, config->so_sndbuf, config->so_rcvbuf);
+#endif
+
   TF_ZERO (&state->in);
   TF_ZERO (&state->out);
   TF_ZERO (&state->flo);
@@ -181,7 +194,7 @@ static int close_partial (STATE *state, BINKD_CONFIG *config)
 /*
  * Clears protocol buffers and queues, closes files, etc.
  */
-static int deinit_protocol (STATE *state, BINKD_CONFIG *config, int status)
+int deinit_protocol (STATE *state, BINKD_CONFIG *config, int status)
 {
   int i;
 
@@ -225,7 +238,7 @@ static int deinit_protocol (STATE *state, BINKD_CONFIG *config, int status)
 }
 
 /* Process rcvdlist */
-static FTNQ *process_rcvdlist (STATE *state, FTNQ *q, BINKD_CONFIG *config)
+FTNQ *process_rcvdlist (STATE *state, FTNQ *q, BINKD_CONFIG *config)
 {
   int i;
 
@@ -315,7 +328,7 @@ static void current_file_was_sent (STATE *state)
 /*
  * Sends next msg from the msg queue or next data block
  */
-static int send_block (STATE *state, BINKD_CONFIG *config)
+int send_block (STATE *state, BINKD_CONFIG *config)
 {
   int i, n, save_errno;
   const char *save_err;
@@ -2091,7 +2104,7 @@ static int start_file_recv (STATE *state, char *args, int sz, BINKD_CONFIG *conf
     return 0;
 }
 
-static int ND_set_status(char *status, FTN_ADDR *fa, STATE *state, BINKD_CONFIG *config)
+int ND_set_status(char *status, FTN_ADDR *fa, STATE *state, BINKD_CONFIG *config)
 {
   char buf[MAXPATHLEN+1];
   FILE *f;
@@ -2145,7 +2158,8 @@ static void z_send_init(STATE *state, BINKD_CONFIG *config, char **extra)
 
   *extra = "";
   if (state->z_cansend && state->extcmd && state->out.size >= config->zminsize
-      && zrule_test(ZRULE_ALLOW, state->out.netname, config->zrules.first)) {
+      && zrule_test(ZRULE_ALLOW, state->out.netname, config->zrules.first)
+      && !(state->to && state->to->NC_flag)) {
 #ifdef WITH_BZLIB2
     if (!state->z_send && (state->z_cansend & 2)) {
       *extra = " BZ2"; state->z_send = 2;
@@ -2448,6 +2462,7 @@ static int GOT (STATE *state, char *args, int sz, BINKD_CONFIG *config)
         {
           char szAddr[FTN_ADDR_SZ + 1];
 
+          memset(szAddr, 0, sizeof(szAddr));
           ftnaddress_to_str (szAddr, &state->sent_fls[n].fa);
           state->bytes_sent += state->sent_fls[n].size;
           ++state->files_sent;
@@ -2538,7 +2553,7 @@ static command *commands[] =
 };
 
 /* Recvs next block, processes msgs or writes down the data from the remote */
-static int recv_block (STATE *state, BINKD_CONFIG *config)
+int recv_block (STATE *state, BINKD_CONFIG *config)
 {
   int no;
 
@@ -2770,7 +2785,7 @@ static int recv_block (STATE *state, BINKD_CONFIG *config)
     return 1;
 }
 
-static int banner (STATE *state, BINKD_CONFIG *config)
+int banner (STATE *state, BINKD_CONFIG *config)
 {
   int tz;
   char szLocalTime[60];
@@ -2850,7 +2865,7 @@ static int banner (STATE *state, BINKD_CONFIG *config)
   return 1;
 }
 
-static int start_file_transfer (STATE *state, FTNQ *file, BINKD_CONFIG *config)
+int start_file_transfer (STATE *state, FTNQ *file, BINKD_CONFIG *config)
 {
   struct stat sb;
   FILE *f = NULL;
@@ -3031,7 +3046,7 @@ static int start_file_transfer (STATE *state, FTNQ *file, BINKD_CONFIG *config)
   return 1;
 }
 
-static void log_end_of_session (int status, STATE *state, BINKD_CONFIG *config)
+void log_end_of_session (int status, STATE *state, BINKD_CONFIG *config)
 {
   char szFTNAddr[FTN_ADDR_SZ + 1];
 

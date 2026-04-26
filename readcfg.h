@@ -111,8 +111,16 @@ struct _BINKD_CONFIG
 #endif
   int        nettimeout;
   int        connect_timeout;
-  int        rescan_delay;
+
+#ifdef AMIGA
+  int 		 tcp_nodelay;
+  int 		 so_sndbuf;
+  int 		 so_rcvbuf;
+#endif
+
   int        call_delay;
+  int        no_call_delay;
+  int        rescan_delay;
   int        max_servers;
   int        max_clients;
   int        kill_dup_partial_files;

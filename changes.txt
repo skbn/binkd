@@ -1,0 +1,334 @@
+===========================================================================
+MULTI-PLATFORM CHANGES (all OS)
+===========================================================================
+
+--- Bug fixes ---
+
+binkd.c:
+- Fixed null pointer dereference: added null check after strdup() on SSH_CONNECTION
+- Fixed potential use-after-free: mypid declaration moved to shared scope (HAVE_FORK || AMIGA)
+- Added config file validation: reject filenames that look like FTN addresses
+
+readcfg.c:
+- Fixed null pointer dereference: added null check after calloc() in print_node_info_1()
+- Fixed use-after-free: checkcfg() error path restructured (unlock before log)
+- Fixed config reload storm: mtime stability check + 5s minimum between reloads (prevents partial-file parse and bind() failures)
+
+inbound.c:
+- Fixed double PATH_SEPARATOR: strnzcat(PATH_SEPARATOR) now checks if path already ends with separator (5 locations)
+
+server.c:
+- Fixed use-after-free: config->rescan_delay saved to local variable before main loop, re-read from new config after checkcfg() reload
+- Fixed ENOTSOCK/EOPNOTSUPP recovery: extended OS/2-only ENOTSOCK handler to also cover EOPNOTSUPP
+
+ftnq.c:
+- Fixed try file deletion: only delete if file exists (prevents error on missing .try files)
+
+--- New features ---
+
+NC_flag (no-compression per node):
+  btypes.h   - Added NC_flag field to FTN_NODE struct
+  ftnnode.h  - Added NC_ON/NC_OFF/NC_USE_OLD defines, NC_flag parameter to add_node()
+  ftnnode.c  - NC_flag propagation in add_node(), add_node_nolock(), copy_node()
+  readcfg.c  - NC_flag parsing in node configuration keyword
+  protocol.c - Skip zlib/bzip2 compression when NC_flag is set on the node
+
+no-call-delay config keyword:
+  readcfg.h  - Added no_call_delay field to BINKD_CONFIG
+  readcfg.c  - Added "no-call-delay" config keyword (read_bool)
+  client.c   - Skip SLEEP(call_delay) when no_call_delay is set
+
+ftnnode.c:
+- NC_flag propagation in add_node(), add_node_nolock(), copy_node()
+
+ftnnode.h:
+- Added NC_ON/NC_OFF/NC_USE_OLD defines, NC_flag parameter to add_node()
+
+--- New files ---
+
+bsycleanup.c:
+- BSY/CSY/TRY file cleanup at startup, scans domain outbounds
+
+bsycleanup.h:
+- API: cleanup_old_bsy()
+
+--- Multi-platform refactoring ---
+
+protocol.c:
+- Changed static functions to extern: init_protocol(), deinit_protocol(), process_rcvdlist(), send_block(), recv_block(), banner(), start_file_transfer(), log_end_of_session(), ND_set_status()
+
+binlog.c:
+- Added extern blsem declaration under (HAVE_THREADS || AMIGA)
+
+client.c:
+- Changed call0() from static to extern (required for Amiga evloop direct calls)
+
+server.c:
+- Added extern eothread declaration under (HAVE_THREADS || AMIGA)
+
+--- Misc tools (new) ---
+
+misc/decompress.c:
+- Decompress FTN day bundles (.SU/.MO/.TU/.WE/.TH/.FR/.SA)
+- Uses MAXPATHLEN from portable.h instead of local #define
+
+misc/freq.c:
+- Create .req/.clo files (ASO flat layout, BSO BinkleyStyle layout)
+- Uses MAXPATHLEN from portable.h
+- Removed local str_tolower() implementation (now in portable.c)
+
+misc/nodelist.c:
+- Compile FidoNet nodelist to binkd.conf node lines (extracts IBN/INA flags)
+- Uses MAX_LINE from portable.h
+- Uses MAXPATHLEN from portable.h
+- Removed local str_trim() implementation
+
+misc/process_tic.c:
+- Process .tic files to filebox (supports config file and legacy args)
+- Uses MAXPATHLEN from portable.h
+- Uses MAX_LINE from portable.h
+- Removed local implementations: trim_nl, skip_ws, ensure_dir, copy_file, move_file, get_file_size
+
+misc/srifreq.c:
+- Reimplementation in C of pgul's misc/srifreq shell script (password protection, aliases, wildcards, rate limiting)
+- Uses MAXPATHLEN from portable.h
+- Uses MAX_LINE from portable.h
+- Converted MAX_ALIASES to dynamic array (realloc)
+- Removed local implementations: wildmatch, is_wildcard, get_file_mtime, str_trim, str_upper
+- Added example aliases file format in header comment
+- Fixed: sizeof(logbuf) on pointer parameter gave wrong size (4/8 bytes instead of buffer size)
+- Fixed: memory leak -- g_aliases array was never freed
+- Fixed: memory leak -- g_conf.tracking linked list was never freed
+- Fixed: sscanf format widths did not match buffer sizes in load_config(), parse_srif(), load_aliases()
+- Fixed: tracking_load() did not reject future/corrupt timestamps
+- Fixed: request line parser offset was wrong when line had leading whitespace
+- Fixed: get_file_size() returning -1 was added to tracking bytes as negative
+- Fixed: parse_srif() TIME keyword without value changed time_limit from -1 to 0
+
+misc/portable.c:
+- Shared implementations: string utilities, file operations, path utilities
+
+misc/portable.h:
+- Portable declarations and platform-specific includes (POSIX, Win32, OS/2, DOS, AmigaOS)
+- Fixed: duplicate declaration of safe_strncpy removed
+
+misc/decompress.txt:
+- Usage documentation for decompress utility
+
+misc/freq.txt:
+- Usage documentation for freq utility
+
+misc/nodelist.txt:
+- Usage documentation for nodelist utility
+
+misc/process_tic.txt:
+- Usage documentation and config file example for process_tic
+
+misc/srifreq.txt:
+- Usage documentation, config file and aliases file examples for srifreq
+
+--- Makefile updates (all platforms) ---
+
+All Makefiles updated to:
+- Include bsycleanup.c in main binary
+- Add portable.c to misc tool compilations
+- Add -I misc to TOOL_CFLAGS for portable.h includes
+
+mkfls/unix/Makefile.in:
+- Added bsycleanup.c to SRCS
+- Added portable.c to misc tool builds
+- Added -I misc to TOOL_CFLAGS
+
+mkfls/nt95-mingw/Makefile:
+- Added bsycleanup.c to SRCS
+- Added portable.c to misc tool builds
+- Added -I misc to TOOL_CFLAGS
+
+mkfls/nt95-msvc/Makefile:
+- Added portable.c to misc tool builds
+- Added -I misc to TOOL_CFLAGS
+
+mkfls/os2-emx/Makefile:
+- Added bsycleanup.c to SRCS
+- Added portable.c to misc tool builds
+- Added -I misc to TOOL_CFLAGS
+
+mkfls/amiga/Makefile.bebbo:
+- New: Complete rewrite for bebbo gcc cross-compiler (no ixemul fork, libnix, Roadshow TCP/IP)
+- Added bsycleanup.c, portable.c, all amiga/ sources
+- Added misc tool compilation rules + -I misc
+- Added AMIGADOS_4D_OUTBOUND define
+
+mkfls/amiga/Makefile.analyze.bebbo:
+- New: Static analysis Makefile for bebbo gcc
+
+mkfls/unix/Makefile.analyze.unix:
+- New: Static analysis Makefile for Unix/GCC
+
+--- Documentation ---
+
+README.md:
+- Added AmigaOS compilation instructions (ADE, ixemul/ixnet library versions)
+- Added usage documentation for all misc tools (decompress, freq, process_tic, srifreq, nodelist)
+- Added note about config reload instability
+
+===========================================================================
+AMIGA-SPECIFIC CHANGES (#ifdef AMIGA / AMIGADOS_4D_OUTBOUND)
+===========================================================================
+
+--- New Amiga-specific files (.c) ---
+
+amiga/evloop.c:
+- Non-blocking event loop with WaitSelect(), replaces servmgr()/clientmgr()
+
+amiga/session.c:
+- Session allocation, accept(), non-blocking connect(), outbound scan
+
+amiga/sock.c:
+- Listen socket management (open_listen_sockets, close_listen_sockets)
+
+amiga/utime.c:
+- utime() stub for AmigaDOS (converts Unix epoch to AmigaDOS epoch)
+
+amiga/rfc2553_amiga.c:
+- getaddrinfo/getnameinfo fallback for Roadshow TCP/IP
+
+amiga/bsdsock.c:
+- BSD socket layer for Roadshow TCP/IP (SocketBase initialization)
+
+amiga/dirent.c:
+- POSIX dirent emulation for AmigaDOS
+
+amiga/proto_amiga.c:
+- Non-blocking BinkP protocol (amiga_proto_open, amiga_proto_step, amiga_proto_close)
+
+--- New Amiga-specific files (.h) ---
+
+amiga/evloop.h:
+- Event loop API (amiga_evloop_run)
+
+amiga/evloop_int.h:
+- Internal session types (sess_t, sess_phase_t, session table)
+
+amiga/bsdsock.h:
+- BSD socket API (SocketBase, TCPERR macros)
+
+amiga/compat_netinet_in.h:
+- Compatibility header for netinet/in.h
+
+amiga/dirent.h:
+- POSIX dirent API (DIR, dirent, opendir, readdir)
+
+amiga/proto_amiga.h:
+- Non-blocking protocol API (APROTO_RUNNING, APROTO_DONE_OK, APROTO_DONE_ERR)
+
+--- Modified Amiga-specific files (existed in pgul, rewritten/extended) ---
+
+amiga/rename.c:
+- Complete rewrite: added duplicate name handling with .001/.002 suffixes, directory scanning for next free name, path splitting, buffer overflow protection
+
+amiga/sem.c:
+- Complete rewrite: replaced ixemul inline/strsup.h with direct Exec calls, added EVENTSEM implementation (AllocSignal/FreeSignal/Signal/Wait), added _InitEventSem/_PostSem/_WaitSem/_CleanEventSem
+
+--- Modified .c files (Amiga-specific changes, all under #ifdef AMIGA) ---
+
+binkd.c:
+- Added #include "bsycleanup.h" (unconditional)
+- Added cleanup_old_bsy() call at startup (unconditional)
+- Added #if defined(HAVE_THREADS) || defined(AMIGA) semaphore declarations (hostsem, resolvsem, lsem, blsem, varsem, config_sem, eothread, wakecmgr)
+- Added #ifdef AMIGA block calling amiga_evloop_run() instead of servmgr()/clientmgr()
+- Added #elif defined(AMIGA) for NIL: null device (instead of /dev/null or nul)
+- Added #ifndef AMIGA guards around fork-only code paths (-i inetd, -a remote addr options)
+
+readcfg.c:
+- Added #ifdef AMIGA extern for config_sem (SignalSemaphore)
+- Added #ifdef AMIGA tcp_nodelay default initialization
+- Added #ifdef AMIGA config keywords: tcp-nodelay, so-sndbuf, so-rcvbuf
+
+protocol.c:
+- Added #ifdef AMIGA include for amiga/proto_amiga.h
+- Added #if defined(HAVE_THREADS) || defined(AMIGA) for extern lsem
+- Added #ifdef AMIGA setsockopts_amiga() calls for tcp-nodelay/so-sndbuf/so-rcvbuf
+
+run.c:
+- Added #ifdef AMIGA includes (dos/dos.h, dos/dostags.h, proto/dos.h)
+- Added #elif defined(AMIGA) SHELL/SHELL_META defines ("c:execute")
+- Added #ifdef AMIGA run() implementation via SystemTagList() with NIL: I/O (synchronous execution, error output to temp file, command existence check)
+- Added #ifdef AMIGA in run3(): pipe/tunnel not supported, returns -1 with log message
+- Added #ifdef AMIGA in execl(): no SHELLOPT parameter (AmigaDOS shell syntax)
+
+tools.c:
+- Added #ifdef AMIGA include for amiga/bsdsock.h
+- Added #if defined(HAVE_THREADS) || defined(AMIGA) for extern lsem
+- Added #ifdef AMIGA console logging rewrite in vLog(): need_newline tracking, \r carriage return for status line overwriting
+
+branch.c:
+- Removed ix_vfork() implementation under #ifdef AMIGA (code was in pgul but not needed for Amiga evloop)
+
+breaksig.c:
+- Added #ifdef AMIGA signal handlers: SIGINT/SIGTERM via signal() (replaces SIGBREAK/SIGHUP used on other platforms)
+
+exitproc.c:
+- Added #if defined(HAVE_THREADS) || defined(AMIGA) extern semaphore declarations (hostsem, resolvsem, lsem, blsem, varsem, config_sem, eothread, wakecmgr)
+- Added #ifdef AMIGA cleanup block in exitfunc(): close_srvmgr_socket(), CleanEventSem/CleanSem for all semaphores, sock_deinit(), nodes_deinit(), bsy_remove_all(), pid_file removal
+
+https.c:
+- Added #ifdef AMIGA: inet_ntoa() uses .sin_addr.s_addr (Roadshow struct in_addr is u_long, not struct)
+
+iptools.c:
+- Added #ifdef AMIGA include for netinet/tcp.h
+- Added #ifdef AMIGA ioctl() size parameter (Amiga ioctl doesn't take size parameter)
+
+server.c:
+- Added #ifdef AMIGA include for amiga/bsdsock.h
+- Added #ifdef AMIGA: force PF_INET (no IPv6 on AmigaOS 3)
+- Added #ifdef AMIGA: bind() retry loop (6 retries, 2s delay) for socket release timing
+- Added #ifdef AMIGA: select() ENOTSOCK/EBADF recovery (restart listen sockets)
+- Added #ifndef AMIGA guard around HAVE_FORK child process handling
+
+client.c:
+- Added #ifdef AMIGA include for amiga/bsdsock.h
+
+--- Modified .h files (Amiga-specific changes, all under #ifdef AMIGA) ---
+
+Config.h:
+- Added AMIGA to platform check: #if defined(HAVE_FORK)+defined(HAVE_THREADS)+defined(DOS)+defined(AMIGA)==0
+
+btypes.h:
+- Added #ifdef AMIGA uintmax_t typedef for long long unsigned on m68k
+
+client.h:
+- Added #ifdef AMIGA includes (netinet/in.h, netinet/tcp.h, sys/socket.h)
+- Added #ifdef AMIGA call0() declaration for direct evloop outbound calls
+
+iphdr.h:
+- Added #ifdef AMIGA: include amiga/bsdsock.h, define sock_init()/sock_deinit()/soclose() macros
+
+iptools.h:
+- Added #ifdef AMIGA includes (sys/socket.h, netinet/in.h, netdb.h)
+- Added #ifdef AMIGA setsockopts_amiga() declaration
+
+readcfg.h:
+- Added #ifdef AMIGA fields: tcp_nodelay, so_sndbuf, so_rcvbuf
+
+readdir.h:
+- Added #elif defined(AMIGA) include for amiga/dirent.h
+
+rfc2553.h:
+- Added #ifdef AMIGA: EAI_* constant redefinitions (prevent libnix conflicts)
+- Added #ifdef AMIGA: include chain (sys/types, sys/socket, netinet/in, arpa/inet, netdb.h)
+- Added #ifdef AMIGA: undef/redefine getaddrinfo/freeaddrinfo/gai_strerror macros
+- Added #ifndef EAI_ADDRFAMILY portability define (maps to EAI_FAMILY)
+
+sem.h:
+- Added #ifdef AMIGA EVENTSEM typedef (struct with Task* waiter + sigbit)
+- Added #ifdef AMIGA typed prototypes for _InitEventSem, _PostSem, _WaitSem, _CleanEventSem
+
+server.h:
+- Added #ifdef AMIGA include for netinet/in.h
+
+sys.h:
+- Added #ifdef AMIGA include for proto/exec.h
+- Added #ifdef AMIGA: undef getpid/sleep, redefine as FindTask(NULL)/Delay()
+- Added #ifdef AMIGA PRIuMAX define as "llu" (uintmax_t is long long unsigned on m68k)
+- Added #ifdef HAVE_FORK includes for signal.h and sys/wait.h

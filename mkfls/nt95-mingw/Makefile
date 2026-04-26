@@ -38,7 +38,8 @@ SRCS= binkd.c readcfg.c tools.c ftnaddr.c ftnq.c client.c server.c protocol.c \
       setpttl.c https.c md5b.c crypt.c getopt.c nt/breaksig.c nt/getfree.c    \
       nt/sem.c nt/TCPErr.c nt/WSock.c nt/w32tools.c nt/tray.c snprintf.c      \
       ntlm/ecb_enc.c ntlm/md4_dgst.c ntlm/set_key.c ntlm/des_enc.c            \
-      ntlm/helpers.c
+      ntlm/helpers.c                                                            \
+      bsycleanup.c
 
 RES=  nt/binkdres.rc
 
@@ -221,7 +222,32 @@ BINKDEXE = $(BINKDNAME).exe
 OBJS=$(addprefix $(OBJDIR)/,$(patsubst %.c,%.o, $(SRCS)))
 RESOBJS=$(addprefix $(OBJDIR)/, $(patsubst %.rc,%.o, $(RES)))
 
-.PHONY: all printinfo install html clean distclean makedirs
+# ---------- Utility tools (stand-alone) ----------
+TOOL_CFLAGS = -O2 -Wall -DWIN32 -I. -I misc
+
+utils: decompress process_tic freq srifreq nodelist
+
+decompress:
+	@echo Compiling decompress...
+	@$(CC) $(TOOL_CFLAGS) -o $(OUTDIR)/decompress.exe misc/decompress.c misc/portable.c
+
+process_tic:
+	@echo Compiling process_tic...
+	@$(CC) $(TOOL_CFLAGS) -o $(OUTDIR)/process_tic.exe misc/process_tic.c misc/portable.c
+
+freq:
+	@echo Compiling freq...
+	@$(CC) $(TOOL_CFLAGS) -o $(OUTDIR)/freq.exe misc/freq.c misc/portable.c
+
+srifreq:
+	@echo Compiling srifreq...
+	@$(CC) $(TOOL_CFLAGS) -o $(OUTDIR)/srifreq.exe misc/srifreq.c misc/portable.c
+
+nodelist:
+	@echo Compiling nodelist...
+	@$(CC) $(TOOL_CFLAGS) -o $(OUTDIR)/nodelist.exe misc/nodelist.c misc/portable.c
+
+.PHONY: all printinfo install html clean distclean makedirs utils decompress process_tic freq srifreq nodelist
 
 all: printinfo makedirs $(OUTDIR)/$(BINKDEXE)
 

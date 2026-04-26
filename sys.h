@@ -22,8 +22,28 @@
 #ifdef HAVE_STDINT_H
   #include <stdint.h>
 #endif
+#ifdef AMIGA
+  /* Include Amiga exec proto for Delay() function */
+  #include <proto/exec.h>
+#endif
 #ifdef HAVE_UNISTD_H
   #include <unistd.h>
+  /* Undefine conflicting unistd.h macros for AMIGA */
+  #ifdef AMIGA
+    #ifdef getpid
+      #undef getpid
+    #endif
+
+    #ifdef sleep
+      #undef sleep
+    #endif
+
+    /* Redefine with our Amiga implementations */
+    #define getpid()  ((int)(ULONG)FindTask(NULL))
+  
+    #define sleep(s) Delay((ULONG)((s) * 50))
+
+  #endif /* AMIGA */
 #endif
 #ifdef HAVE_IO_H
   #include <io.h>
@@ -103,6 +123,11 @@
 #else
   extern int mypid;
   #define PID() mypid
+#endif
+
+#ifdef HAVE_FORK
+  #include <signal.h>   /* Needed for SIG_BLOCK/SIG_UNBLOCK and WIFEXITED/WEXITSTATUS */
+  #include <sys/wait.h>
 #endif
 
 #if defined(HAVE_FORK) && defined(HAVE_SIGPROCMASK) && defined(HAVE_WAITPID) && defined(SIG_BLOCK)
@@ -292,7 +317,15 @@ typedef unsigned long int u32;
 
 #ifndef PRIdMAX
 #define PRIdMAX "ld"
+#endif
+
+#ifndef PRIuMAX
+#ifdef AMIGA
+/* On AmigaOS m68k, uintmax_t is long long unsigned int */
+#define PRIuMAX "llu"
+#else
 #define PRIuMAX "lu"
+#endif
 #endif
 
 #ifndef HAVE_STRTOUMAX

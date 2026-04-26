@@ -1,0 +1,67 @@
+srifreq -- SRIF-compatible file request server
+
+USAGE:
+  srifreq --conf <srifreq.conf> <srif_file>
+
+DESCRIPTION:
+  SRIF (Standard Request Information Format) compatible file
+  request server for binkd. Processes incoming .req files and
+  serves files based on password protection and aliases.
+
+CONFIGURATION FILE FORMAT:
+  # Lines starting with # are comments
+  # Blank lines are ignored
+
+  pubdir      <path>              # Public directory (no password required)
+  logfile     <path>              # Log file, or - to disable
+  aliases     <path>              # Magic-name aliases file (optional)
+  private     <path> <password>   # Private directory (requires !password)
+
+  # Rate limiting options (optional):
+  trackfile   <path>              # File to track node download statistics
+  maxfiles    <n>                 # Max files per node per time window (0=unlimited)
+  maxsize     <bytes>             # Max bytes per node per time window (0=unlimited)
+  timewindow  <seconds>           # Time window in seconds (0=no window)
+
+ALIASES FILE FORMAT:
+  # Lines starting with # are comments
+  # Format: <magic_name> <path_to_file>
+  # Names are matched case-insensitively
+
+EXAMPLE CONFIG FILE (srifreq.conf):
+  # srifreq.conf - SRIF Request Server Configuration
+
+  pubdir    Work:Fido/Public
+  logfile   Work:Logs/srifreq.log
+  aliases   Work:Fido/srifreq.aliases
+
+  # Private directories (password protected)
+  private   Work:Fido/Private/Uploader1  secretpass1
+  private   Work:Fido/Private/Node190  node190pwd
+
+  # Rate limiting: max 10 files or 50MB per node per 24 hours
+  trackfile   Work:Logs/srifreq.track
+  maxfiles    10
+  maxsize     52428800
+  timewindow  86400
+
+EXAMPLE ALIASES FILE (srifreq.aliases):
+  # srifreq.aliases - Magic-name to file mappings
+  # Names are case-insensitive
+
+  DOORWAY   Games:Utils/Doorway/doorway.zip
+  NETMAIL   Work:Comm/Fido/netmail.lha
+  README    Docs:Readme.txt
+  4DOUT     AmiTCP:4DOut.lha
+  BINKD     Apps:Comm/Binkd/binkd.lha
+
+REQUEST FILE FORMAT (.req):
+  Files listed one per line. Modifiers:
+  !password    - Required password for private areas
+  +timestamp   - Only serve if file is newer than timestamp
+  U            - Update request (only if newer than client's TRANX)
+
+EXAMPLES:
+  srifreq --conf srifreq.conf inbound/srif_file.req
+  srifreq --conf srifreq.conf inbound/*.req
+  exec "work:fido/srifreq --conf work:fido/srifreq.conf *S" *.req *.REQ

@@ -21,8 +21,52 @@
 
 #include "iphdr.h"
 
+/* Amiga: define EAI_* before including netdb.h to prevent libnix redefinition */
+#if defined(AMIGA)
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+  #undef EAI_NONAME
+  #undef EAI_AGAIN
+  #undef EAI_FAIL
+  #undef EAI_NODATA
+  #undef EAI_FAMILY
+  #undef EAI_SOCKTYPE
+  #undef EAI_SERVICE
+  #undef EAI_ADDRFAMILY
+  #undef EAI_MEMORY
+  #undef EAI_SYSTEM
+  #undef EAI_UNKNOWN
+  #define EAI_NONAME     -1
+  #define EAI_AGAIN      -2
+  #define EAI_FAIL       -3
+  #define EAI_NODATA     -4
+  #define EAI_FAMILY     -5
+  #define EAI_SOCKTYPE   -6
+  #define EAI_SERVICE    -7
+  #define EAI_ADDRFAMILY -8
+  #define EAI_MEMORY     -9
+  #define EAI_SYSTEM     -10
+  #define EAI_UNKNOWN    -11
+
+#include <netdb.h>
+
+/* EAI_ADDRFAMILY is BSD/macOS specific; Linux/glibc does not define it
+ * Map it to EAI_FAMILY which has the same meaning on those platforms */
+#ifndef EAI_ADDRFAMILY
+#ifdef EAI_FAMILY
+#define EAI_ADDRFAMILY EAI_FAMILY
+#else
+#define EAI_ADDRFAMILY -9
+#endif
+#endif
+
+#endif
+
 /* Autosense getaddrinfo */
-#if defined(AI_PASSIVE) && defined(EAI_NONAME)
+#if defined(AI_PASSIVE) && defined(EAI_NONAME) && !defined(AMIGA)
 #define HAVE_GETADDRINFO
 #endif
 
@@ -46,6 +90,18 @@
      struct addrinfo_emu  *ai_next; /* next structure in linked list */
   };
   #define addrinfo addrinfo_emu
+
+#ifdef AMIGA
+#ifdef getaddrinfo
+#undef getaddrinfo
+#endif
+#ifdef freeaddrinfo
+#undef freeaddrinfo
+#endif
+#ifdef gai_strerror
+#undef gai_strerror
+#endif
+#endif
 
   int getaddrinfo(const char *nodename, const char *servname,
                   const struct addrinfo *hints,
