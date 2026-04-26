@@ -1729,6 +1729,21 @@ static int PWD (STATE *state, char *pwd, int sz, BINKD_CONFIG *config)
     Log (5, "Turn on NR-mode with this link (remote has buggy NR)");
   }
 
+  if ((state->NR_flag & (WANT_NR | WE_NR)) == 0)
+  {
+      char *tmp_inbound = select_inbound (state->fa, state->state, config);
+      char *saved_inbound = state->inbound;
+      state->inbound = tmp_inbound;
+
+      if (inb_has_partials (state, config))
+      {
+          state->NR_flag |= WANT_NR;
+          Log (4, "auto NR-mode: incomplete files found for this link");
+      }
+
+      state->inbound = saved_inbound;
+  }
+
   szOpt = xstrdup(" EXTCMD");
   if (state->NR_flag & WANT_NR) xstrcat(&szOpt, " NR");
   if (state->ND_flag & THEY_ND) xstrcat(&szOpt, " ND");
@@ -2849,6 +2864,12 @@ int banner (STATE *state, BINKD_CONFIG *config)
   if (state->to || !state->delay_ADR) send_ADR (state, config);
 
   if (state->to) {
+    if ((state->NR_flag & (WANT_NR | WE_NR)) == 0 && inb_has_partials (state, config))
+    {
+        state->NR_flag |= WANT_NR;
+        Log (4, "auto NR-mode: incomplete files found for this link");
+    }
+
     szOpt = xstrdup(" NDA EXTCMD");
     if (state->NR_flag & WANT_NR) xstrcat(&szOpt, " NR");
     if (state->ND_flag & THEY_ND) xstrcat(&szOpt, " ND");
@@ -3059,11 +3080,12 @@ void log_end_of_session (int status, STATE *state, BINKD_CONFIG *config)
   else
     strcpy (szFTNAddr, "?");
 
-  Log (2, "done (%s%s, %s, S/R: %i/%i (%" PRIuMAX "/%" PRIuMAX " bytes))",
+  Log (2, "done (%s%s, %s, S/R: %i/%i (%" PRIuMAX "/%" PRIuMAX " bytes), %lus)",
        state->to ? "to " : (state->fa ? "from " : ""), szFTNAddr,
        status ? "failed" : "OK",
        state->files_sent, state->files_rcvd,
-       state->bytes_sent, state->bytes_rcvd);
+       state->bytes_sent, state->bytes_rcvd,
+       (unsigned long)(safe_time() - state->start_time));
 }
 
 void protocol (SOCKET socket_in, SOCKET socket_out, FTN_NODE *to, FTN_ADDR *fa,

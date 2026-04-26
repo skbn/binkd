@@ -26,6 +26,15 @@ ftnq.c:
 
 --- New features ---
 
+Session time in "done" line:
+  protocol.c - log_end_of_session() now includes session duration in seconds
+
+Auto NR-mode on incomplete files:
+  inbound.c  - Added inb_has_partials(): scans inbound for .hr files matching remote AKAs
+  inbound.h  - Added inb_has_partials() declaration
+  protocol.c - Call inb_has_partials() in banner() (outgoing) and PWD() (incoming) to
+               automatically set WANT_NR when partial files exist for the remote link
+
 NC_flag (no-compression per node):
   btypes.h   - Added NC_flag field to FTN_NODE struct
   ftnnode.h  - Added NC_ON/NC_OFF/NC_USE_OLD defines, NC_flag parameter to add_node()
@@ -35,7 +44,7 @@ NC_flag (no-compression per node):
 
 no-call-delay config keyword:
   readcfg.h  - Added no_call_delay field to BINKD_CONFIG
-  readcfg.c  - Added "no-call-delay" config keyword (read_bool)
+  readcfg.c  - Added "no-call-delay" config keyword
   client.c   - Skip SLEEP(call_delay) when no_call_delay is set
 
 ftnnode.c:
@@ -50,7 +59,7 @@ bsycleanup.c:
 - BSY/CSY/TRY file cleanup at startup, scans domain outbounds
 
 bsycleanup.h:
-- API: cleanup_old_bsy()
+- cleanup_old_bsy()
 
 --- Multi-platform refactoring ---
 
@@ -75,42 +84,28 @@ misc/decompress.c:
 misc/freq.c:
 - Create .req/.clo files (ASO flat layout, BSO BinkleyStyle layout)
 - Uses MAXPATHLEN from portable.h
-- Removed local str_tolower() implementation (now in portable.c)
 
 misc/nodelist.c:
 - Compile FidoNet nodelist to binkd.conf node lines (extracts IBN/INA flags)
 - Uses MAX_LINE from portable.h
 - Uses MAXPATHLEN from portable.h
-- Removed local str_trim() implementation
 
 misc/process_tic.c:
 - Process .tic files to filebox (supports config file and legacy args)
 - Uses MAXPATHLEN from portable.h
 - Uses MAX_LINE from portable.h
-- Removed local implementations: trim_nl, skip_ws, ensure_dir, copy_file, move_file, get_file_size
 
 misc/srifreq.c:
 - Reimplementation in C of pgul's misc/srifreq shell script (password protection, aliases, wildcards, rate limiting)
 - Uses MAXPATHLEN from portable.h
 - Uses MAX_LINE from portable.h
 - Converted MAX_ALIASES to dynamic array (realloc)
-- Removed local implementations: wildmatch, is_wildcard, get_file_mtime, str_trim, str_upper
-- Added example aliases file format in header comment
-- Fixed: sizeof(logbuf) on pointer parameter gave wrong size (4/8 bytes instead of buffer size)
-- Fixed: memory leak -- g_aliases array was never freed
-- Fixed: memory leak -- g_conf.tracking linked list was never freed
-- Fixed: sscanf format widths did not match buffer sizes in load_config(), parse_srif(), load_aliases()
-- Fixed: tracking_load() did not reject future/corrupt timestamps
-- Fixed: request line parser offset was wrong when line had leading whitespace
-- Fixed: get_file_size() returning -1 was added to tracking bytes as negative
-- Fixed: parse_srif() TIME keyword without value changed time_limit from -1 to 0
 
 misc/portable.c:
 - Shared implementations: string utilities, file operations, path utilities
 
 misc/portable.h:
 - Portable declarations and platform-specific includes (POSIX, Win32, OS/2, DOS, AmigaOS)
-- Fixed: duplicate declaration of safe_strncpy removed
 
 misc/decompress.txt:
 - Usage documentation for decompress utility
@@ -167,10 +162,7 @@ mkfls/unix/Makefile.analyze.unix:
 
 --- Documentation ---
 
-README.md:
-- Added AmigaOS compilation instructions (ADE, ixemul/ixnet library versions)
 - Added usage documentation for all misc tools (decompress, freq, process_tic, srifreq, nodelist)
-- Added note about config reload instability
 
 ===========================================================================
 AMIGA-SPECIFIC CHANGES (#ifdef AMIGA / AMIGADOS_4D_OUTBOUND)

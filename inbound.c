@@ -107,6 +107,101 @@ static int to_be_deleted (char *tmp_name, char *netname, boff_t filesize, BINKD_
 }
 
 /*
+ * Returns 1 if there are partial files (.hr) in the inbound belonging to
+ * one of the active AKAs in state->fa[0..state->nfa-1]. Does not remove
+ * anything. Used to auto-enable NR-mode when incomplete files exist
+ *
+ * Copied from find_tmp_name()
+ */
+int inb_has_partials (STATE *state, BINKD_CONFIG *config)
+{
+    char s[MAXPATHLEN + 1];
+    char buf[MAXPATHLEN + 80];
+    DIR *dp;
+    struct dirent *de;
+    FILE *f;
+    int i, found = 0;
+    char *t, *inbound;
+
+    /* Prefer temp_inbound if configured, same logic as find_tmp_name() */
+    inbound = state->inbound;
+
+    if (config->temp_inbound[0])
+    {
+        inbound = config->temp_inbound;
+    }
+
+    if ((dp = opendir (inbound)) == 0)
+    {
+        return 0;
+    }
+
+    /* Build base path with trailing separator, t points to the filename part */
+    strnzcpy (s, inbound, MAXPATHLEN);
+
+    if (strlen(s) > 0 && s[strlen(s) - 1] != PATH_SEPARATOR[0])
+    {
+        strnzcat (s, PATH_SEPARATOR, MAXPATHLEN);
+    }
+
+    t = s + strlen (s);
+
+    while ((de = readdir (dp)) != 0 && !found)
+    {
+        /* .hr files are named 8 hex digits + ".hr" */
+        for (i = 0; i < 8; ++i)
+        {
+            if (!isxdigit (de->d_name[i]))
+                break;
+        }
+
+        if (i < 8 || STRICMP (de->d_name + 8, ".hr"))
+            continue;
+
+        strnzcat (s, de->d_name, MAXPATHLEN);
+
+        if ((f = fopen (s, "r")) != NULL)
+        {
+            if (fgets (buf, sizeof (buf), f) != NULL)
+            {
+                /* Field 4 in .hr is the FTN address of the sender */
+                char *w3 = getwordx (buf, 4, GWX_NOESC);
+
+                if (w3)
+                {
+                    FTN_ADDR fa;
+
+                    FA_ZERO (&fa);
+
+                    if (parse_ftnaddress (w3, &fa, config->pDomains.first))
+                    {
+                        /* Match against active (non-busy) AKAs only */
+                        for (i = 0; i < state->nfa; i++)
+                        {
+                            if (!ftnaddress_cmp (&fa, state->fa + i))
+                            {
+                                found = 1;
+                                break;
+                            }
+                        }
+                    }
+
+                    xfree (w3);
+                }
+            }
+
+            fclose (f);
+        }
+
+        *t = 0; /* Reset filename part for next entry */
+    }
+
+    closedir (dp);
+
+    return found;
+}
+
+/*
  * Searches for the ``file'' in the inbound and returns it's tmp name in s.
  * S must have MAXPATHLEN chars. Returns 0 on error, 1=found, 2=created.
  */
