@@ -132,4 +132,16 @@ long get_file_mtime(const char *path);
 void path_join(char *out, int outsize, const char *base, const char *sub);
 int make_abs_path(const char *src, char *dst, int dstlen);
 
+/* Config parsing utilities */
+int parse_config_line(const char *line, char *key, int klen, char *val, int vlen);
+int config_get(const char *filename, const char *key, char *val, int vlen);
+long parse_size(const char *s);
+long parse_time(const char *s);
+
+/* Config cache in memory */
+typedef struct ConfigCache ConfigCache;
+ConfigCache *config_load(const char *filename);
+int config_lookup(ConfigCache *cache, const char *key, char *val, int vlen);
+void config_cache_free(ConfigCache *cache);
+
 #endif /* BINKD_PORTABLE_H */

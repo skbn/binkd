@@ -84,6 +84,8 @@ misc/decompress.c:
 misc/freq.c:
 - Create .req/.clo files (ASO flat layout, BSO BinkleyStyle layout)
 - Uses MAXPATHLEN from portable.h
+- Added --zone-ext option: use zone extension (outbound.002/) with --bso
+- Default BSO format: outbound/ (no zone extension, binkd standard)
 
 misc/nodelist.c:
 - Compile FidoNet nodelist to binkd.conf node lines (extracts IBN/INA flags)
@@ -94,15 +96,26 @@ misc/process_tic.c:
 - Process .tic files to filebox (supports config file and legacy args)
 - Uses MAXPATHLEN from portable.h
 - Uses MAX_LINE from portable.h
+- Updated parse_config() to use portable.c parse_config_line()
 
 misc/srifreq.c:
 - Reimplementation in C of pgul's misc/srifreq shell script (password protection, aliases, wildcards, rate limiting)
 - Uses MAXPATHLEN from portable.h
 - Uses MAX_LINE from portable.h
 - Converted MAX_ALIASES to dynamic array (realloc)
+- Updated load_config() to use portable.c config_load(), config_lookup(), config_cache_free()
+- Renamed local config_free() to srifreq_config_cleanup() to avoid conflict with portable.c
+- Error messages now go to log file (config logfile) instead of stderr
 
 misc/portable.c:
 - Shared implementations: string utilities, file operations, path utilities
+- Added parse_config_line(): robust config line parser (BOM, tabs, comments inline, whitespace)
+- Added config_get(): lookup single key in config file
+- Added config_load(): load entire config into memory cache
+- Added config_lookup(): lookup key in cached config (no file I/O)
+- Added config_cache_free(): free cached config memory (renamed from config_free to avoid conflict with srifreq.c)
+- Added parse_size(): parse size with suffixes (k/K/m/M/g/G) or plain bytes
+- Added parse_time(): parse time with suffixes (s/m/h/d) or plain seconds
 
 misc/portable.h:
 - Portable declarations and platform-specific includes (POSIX, Win32, OS/2, DOS, AmigaOS)
@@ -172,7 +185,8 @@ AMIGA-SPECIFIC CHANGES (#ifdef AMIGA / AMIGADOS_4D_OUTBOUND)
 
 amiga/evloop.c:
 - Non-blocking event loop with WaitSelect(), replaces servmgr()/clientmgr()
-- Fixed startup delay: last_rescan=0 after pre-loop try_outbound forces immediate retry in first loop iteration (avoids waiting rescan-delay seconds if DNS failed at startup)
+- Fixed startup delay: last_rescan=0 after pre-loop try_outbound forces immediate retry
+  in first loop iteration (avoids waiting rescan-delay seconds if DNS failed at startup)
 
 amiga/session.c:
 - Session allocation, accept(), non-blocking connect(), outbound scan
@@ -194,7 +208,9 @@ amiga/dirent.c:
 
 amiga/proto_amiga.c:
 - Non-blocking BinkP protocol (amiga_proto_open, amiga_proto_step, amiga_proto_close)
-- Fixed premature M_EOB: added !state->in.f to EOB condition — prevents sending M_EOB while a remote file is still being received (avoids "M_EOB but N files pending M_GOT" error on the remote side)
+- Fixed premature M_EOB: added !state->in.f to EOB condition — prevents sending M_EOB
+  while a remote file is still being received (avoids "M_EOB but N files pending M_GOT"
+  error on the remote side)
 
 --- New Amiga-specific files (.h) ---
 

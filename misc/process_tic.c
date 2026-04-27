@@ -10,6 +10,19 @@
 #include "portable.h" /* Canonical portable layer */
 #include <ctype.h>
 
+/* Config structure */
+static struct
+{
+    char inbound[MAXPATHLEN];
+    char filebox[MAXPATHLEN];
+    char pubdir[MAXPATHLEN];
+    char logfile[MAXPATHLEN];
+    char filelist[MAXPATHLEN];
+    char newfiles[MAXPATHLEN];
+    char ticlog[MAXPATHLEN];
+    int copypublic;
+} cfg;
+
 static int my_toupper(int c)
 {
     if (c >= 'a' && c <= 'z')
@@ -382,78 +395,47 @@ static int is_tic_file(const char *name)
     return (my_strnicmp(name + len - 4, ".tic", 4) == 0);
 }
 
-/* Config structure */
-static struct
-{
-    char inbound[MAXPATHLEN];
-    char filebox[MAXPATHLEN];
-    char pubdir[MAXPATHLEN];
-    char logfile[MAXPATHLEN];
-    char filelist[MAXPATHLEN];
-    char newfiles[MAXPATHLEN];
-    char ticlog[MAXPATHLEN];
-    int copypublic;
-} cfg;
-
 /* Parse configuration file */
 static int parse_config(const char *conffile)
 {
-    FILE *f;
-    char line[MAX_LINE];
-    char *key, *value;
+    ConfigCache *cache;
+    char val[MAXPATHLEN];
 
     memset(&cfg, 0, sizeof(cfg));
 
-    f = fopen(conffile, "r");
-
-    if (!f)
+    cache = config_load(conffile);
+    if (!cache)
     {
         fprintf(stderr, "process_tic: cannot open config file: %s\n", conffile);
         return 0;
     }
 
-    while (fgets(line, sizeof(line), f))
+    /* Read each field using config_lookup() */
+    if (config_lookup(cache, "inbound", val, sizeof(val)))
+        safe_strncpy(cfg.inbound, val, (int)sizeof(cfg.inbound));
+
+    if (config_lookup(cache, "filebox", val, sizeof(val)))
+        safe_strncpy(cfg.filebox, val, (int)sizeof(cfg.filebox));
+
+    if (config_lookup(cache, "pubdir", val, sizeof(val)))
     {
-        trim_nl(line);
-        key = skip_ws(line);
-
-        /* Skip comments and empty lines */
-        if (*key == '#' || *key == '\0')
-            continue;
-
-        /* Find value after key */
-        value = key;
-
-        while (*value && *value != ' ' && *value != '\t')
-            value++;
-
-        if (*value)
-        {
-            *value = '\0';
-            value = skip_ws(value + 1);
-        }
-
-        /* Parse key-value pairs */
-        if (strcmp(key, "inbound") == 0)
-            safe_strncpy(cfg.inbound, value, (int)sizeof(cfg.inbound));
-        else if (strcmp(key, "filebox") == 0)
-            safe_strncpy(cfg.filebox, value, (int)sizeof(cfg.filebox));
-        else if (strcmp(key, "pubdir") == 0)
-        {
-            safe_strncpy(cfg.pubdir, value, (int)sizeof(cfg.pubdir));
-            cfg.copypublic = 1;
-        }
-        else if (strcmp(key, "logfile") == 0)
-            safe_strncpy(cfg.logfile, value, (int)sizeof(cfg.logfile));
-        else if (strcmp(key, "filelist") == 0)
-            safe_strncpy(cfg.filelist, value, (int)sizeof(cfg.filelist));
-        else if (strcmp(key, "newfiles") == 0)
-            safe_strncpy(cfg.newfiles, value, (int)sizeof(cfg.newfiles));
-        else if (strcmp(key, "ticlog") == 0)
-            safe_strncpy(cfg.ticlog, value, (int)sizeof(cfg.ticlog));
+        safe_strncpy(cfg.pubdir, val, (int)sizeof(cfg.pubdir));
+        cfg.copypublic = 1;
     }
 
-    fclose(f);
+    if (config_lookup(cache, "logfile", val, sizeof(val)))
+        safe_strncpy(cfg.logfile, val, (int)sizeof(cfg.logfile));
+
+    if (config_lookup(cache, "filelist", val, sizeof(val)))
+        safe_strncpy(cfg.filelist, val, (int)sizeof(cfg.filelist));
+
+    if (config_lookup(cache, "newfiles", val, sizeof(val)))
+        safe_strncpy(cfg.newfiles, val, (int)sizeof(cfg.newfiles));
+
+    if (config_lookup(cache, "ticlog", val, sizeof(val)))
+        safe_strncpy(cfg.ticlog, val, (int)sizeof(cfg.ticlog));
+
+    config_cache_free(cache);
 
     /* Validate required fields */
     if (!cfg.inbound[0] || !cfg.filebox[0])
@@ -520,8 +502,7 @@ int main(int argc, char *argv[])
 
     if (!inbound[0] || !filebox[0])
     {
-        fprintf(stderr,
-                "Usage: process_tic --conf <config-file> [*.tic]\n");
+        fprintf(stderr, "Usage: process_tic --conf <config-file> [*.tic]\n");
 
         return 1;
     }

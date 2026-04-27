@@ -29,27 +29,39 @@ static int build_aso_paths(const char *outbound, unsigned int zone, unsigned int
     return 0;
 }
 
-/* build_bso_paths -- BSO BinkleyStyle layout (lowercase hex) */
-static int build_bso_paths(const char *outbound, unsigned int zone, unsigned int net, unsigned int node, unsigned int point, char *req_path, char *clo_path, int pathsize)
+/* build_bso_paths -- BSO BinkleyStyle layout (lowercase hex)
+ * use_zone_ext: 0 = outbound/ (binkd default), 1 = outbound.002/ (with zone ext) */
+static int build_bso_paths(const char *outbound, unsigned int zone, unsigned int net, unsigned int node, unsigned int point, int use_zone_ext, char *req_path, char *clo_path, int pathsize)
 {
     char zone_dir[FREQ_MAX_PATH];
     char node_dir[FREQ_MAX_PATH];
+    const char *base_dir;
 
-    /* Zone dir: <outbound>.0ZZ  (lowercase hex) */
-    snprintf(zone_dir, sizeof(zone_dir), "%s.%03x", outbound, zone);
-    str_tolower(zone_dir);
+    if (use_zone_ext)
+    {
+        /* Zone dir: <outbound>.0ZZ  (lowercase hex) binkp compatible */
+        snprintf(zone_dir, sizeof(zone_dir), "%s.%03x", outbound, zone);
+        str_tolower(zone_dir);
+        base_dir = zone_dir;
+    }
+    else
+    {
+        /* No zone extension: use outbound/ directly (binkd default) */
+        base_dir = outbound;
+    }
 
-    if (mkdir_recursive(zone_dir) < 0 && !path_exists(zone_dir))
+    if (mkdir_recursive(base_dir) < 0 && !path_exists(base_dir))
         return -1;
 
     if (point == 0)
     {
-        snprintf(req_path, (size_t)pathsize, "%s/%04x%04x.req", zone_dir, net, node);
-        snprintf(clo_path, (size_t)pathsize, "%s/%04x%04x.clo", zone_dir, net, node);
+        snprintf(req_path, (size_t)pathsize, "%s/%04x%04x.req", base_dir, net, node);
+        snprintf(clo_path, (size_t)pathsize, "%s/%04x%04x.clo", base_dir, net, node);
     }
     else
     {
-        snprintf(node_dir, sizeof(node_dir), "%s/%04x%04x.pnt", zone_dir, net, node);
+        snprintf(node_dir, sizeof(node_dir), "%s/%04x%04x.pnt", base_dir, net, node);
+        str_tolower(node_dir);
 
         if (mkdir_recursive(node_dir) < 0 && !path_exists(node_dir))
             return -1;
@@ -72,10 +84,11 @@ int main(int argc, char *argv[])
     const char *outbound;
     const char *arg_outbound;
     const char *arg_addr;
-    const char *password = NULL; /* --password <pass>     → !pass suffix    */
-    long newer_than = 0;         /* --newer-than <unixts> → +ts suffix       */
-    int update = 0;              /* --update               → U suffix         */
+    const char *password = NULL; /* --password <pass> !pass suffix */
+    long newer_than = 0;         /* --newer-than <unixts> +ts suffix */
+    int update = 0;              /* --update  U suffix */
     int use_bso = 0;
+    int use_zone_ext = 0; /* --zone-ext use outbound.002/ */
     int argi = 1;
     int nfiles = 0;
 
@@ -94,6 +107,11 @@ int main(int argc, char *argv[])
             use_bso = 0;
             argi++;
         }
+        else if (strcmp(argv[argi], "--zone-ext") == 0)
+        {
+            use_zone_ext = 1;
+            argi++;
+        }
         else if (strcmp(argv[argi], "--update") == 0)
         {
             update = 1;
@@ -110,20 +128,19 @@ int main(int argc, char *argv[])
             argi++;
         }
         else
-            break; /* unknown flag — stop, treat rest as positional */
+            break; /* Unknown flag — stop, treat rest as positional */
     }
 
     if (argc - argi < 3)
     {
-        fprintf(stderr,
-                "Usage: freq [options] <outbound_dir> Z:N/NODE[.POINT] <file> [<file>...]\n"
-                "Options:\n"
-                "  --aso            flat layout (default): outbound/Z.N.NODE.POINT.req\n"
-                "  --bso            BSO layout: outbound.0ZZ/nnnnnnnn[.pnt/pppppppp].req\n"
-                "  --password <pw>  append !pw to each request line\n"
-                "  --newer-than <t> append +<unix_timestamp> (request if newer)\n"
-                "  --update         append U flag (update request)\n"
-                "Multiple filenames can be listed after the address.\n");
+        fprintf(stderr, "Usage: freq [--bso|--aso] [--zone-ext] [--update] [--password <pass>] [--newer-than <unixts>] <outbound> <address> <files>...\n");
+        fprintf(stderr, "  --bso            Use BSO outbound structure (default: outbound/)\n");
+        fprintf(stderr, "  --zone-ext       Use zone extension (outbound.002/) with --bso\n");
+        fprintf(stderr, "  --aso            Use ASO flat outbound structure\n");
+        fprintf(stderr, "  --password <pw>  append !pw to each request line\n");
+        fprintf(stderr, "  --newer-than <t> append +<unix_timestamp> (request if newer)\n");
+        fprintf(stderr, "  --update         append U flag (update request)\n");
+        fprintf(stderr, "Multiple filenames can be listed after the address.\n");
         return 1;
     }
 
@@ -145,15 +162,15 @@ int main(int argc, char *argv[])
 
     if (use_bso)
     {
-        if (build_bso_paths(outbound, zone, net, node, point, req_path, clo_path, FREQ_MAX_PATH) < 0)
+        if (build_bso_paths(abs_outbound, zone, net, node, point, use_zone_ext, req_path, clo_path, FREQ_MAX_PATH) != 0)
         {
-            fprintf(stderr, "freq: cannot create BSO dirs under: %s\n", outbound);
+            fprintf(stderr, "freq: cannot create BSO outbound paths\n");
             return 1;
         }
     }
     else
     {
-        if (build_aso_paths(outbound, zone, net, node, point, req_path, clo_path, FREQ_MAX_PATH) < 0)
+        if (build_aso_paths(abs_outbound, zone, net, node, point, req_path, clo_path, FREQ_MAX_PATH) < 0)
         {
             fprintf(stderr, "freq: cannot create outbound dir: %s\n", outbound);
             return 1;

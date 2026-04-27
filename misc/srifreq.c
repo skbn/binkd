@@ -110,7 +110,7 @@ static void config_add_private(const char *path, const char *password)
     }
 }
 
-static void config_free(void)
+static void srifreq_config_cleanup(void)
 {
     PrivDir *pd = g_conf.privdirs;
     NodeTrack *nt = g_conf.tracking;
@@ -144,56 +144,67 @@ static void config_free(void)
 
 static int load_config(const char *path)
 {
+    ConfigCache *cache;
+    char val[MAXPATHLEN];
+    char pw[64];
     FILE *f;
-    char line[MAX_LINE];
-    char key[64], val[MAXPATHLEN], pw[64];
-    int n;
 
-    f = fopen(path, "r");
+    cache = config_load(path);
 
-    if (!f)
+    if (!cache)
     {
         fprintf(stderr, "srifreq: cannot open config: %s\n", path);
         return 0;
     }
 
-    while (fgets(line, sizeof(line), f))
+    if (config_lookup(cache, "pubdir", val, sizeof(val)))
+        safe_strncpy(g_conf.pubdir, val, (int)sizeof(g_conf.pubdir));
+
+    if (config_lookup(cache, "logfile", val, sizeof(val)))
+        safe_strncpy(g_conf.logfile, val, (int)sizeof(g_conf.logfile));
+
+    if (config_lookup(cache, "aliases", val, sizeof(val)))
+        safe_strncpy(g_conf.aliases, val, (int)sizeof(g_conf.aliases));
+
+    if (config_lookup(cache, "trackfile", val, sizeof(val)))
+        safe_strncpy(g_conf.trackfile, val, (int)sizeof(g_conf.trackfile));
+
+    if (config_lookup(cache, "maxfiles", val, sizeof(val)))
+        g_conf.maxfiles = atoi(val);
+
+    if (config_lookup(cache, "maxsize", val, sizeof(val)))
+        g_conf.maxbytes = parse_size(val);
+
+    if (config_lookup(cache, "timewindow", val, sizeof(val)))
+        g_conf.timewindow = parse_time(val);
+
+    /* Handle private dirs - need to re-scan file for password field */
+    f = fopen(path, "r");
+    if (f)
     {
-        /* Strip trailing whitespace and newlines */
-        n = (int)strlen(line);
+        char line[MAX_LINE];
+        char key[64], v[MAXPATHLEN];
 
-        while (n > 0 &&
-               (line[n - 1] == '\r' || line[n - 1] == '\n' || line[n - 1] == ' '))
-            line[--n] = '\0';
+        while (fgets(line, sizeof(line), f))
+        {
+            key[0] = v[0] = pw[0] = '\0';
 
-        /* Skip blank and comment lines */
-        if (!line[0] || line[0] == '#')
-            continue;
+            if (!parse_config_line(line, key, (int)sizeof(key), v, (int)sizeof(v)))
+                continue;
 
-        key[0] = val[0] = pw[0] = '\0';
+            if (strcmp(key, "private") == 0)
+            {
+                sscanf(line, "%*s %*s %63s", pw);
 
-        if (sscanf(line, "%63s %1023s %63s", key, val, pw) < 2)
-            continue;
+                if (pw[0])
+                    config_add_private(v, pw);
+            }
+        }
 
-        if (strcmp(key, "pubdir") == 0)
-            safe_strncpy(g_conf.pubdir, val, (int)sizeof(g_conf.pubdir));
-        else if (strcmp(key, "logfile") == 0)
-            safe_strncpy(g_conf.logfile, val, (int)sizeof(g_conf.logfile));
-        else if (strcmp(key, "aliases") == 0)
-            safe_strncpy(g_conf.aliases, val, (int)sizeof(g_conf.aliases));
-        else if (strcmp(key, "trackfile") == 0)
-            safe_strncpy(g_conf.trackfile, val, (int)sizeof(g_conf.trackfile));
-        else if (strcmp(key, "maxfiles") == 0)
-            g_conf.maxfiles = atoi(val);
-        else if (strcmp(key, "maxsize") == 0)
-            g_conf.maxbytes = atol(val);
-        else if (strcmp(key, "timewindow") == 0)
-            g_conf.timewindow = atol(val);
-        else if (strcmp(key, "private") == 0 && pw[0])
-            config_add_private(val, pw);
+        fclose(f);
     }
 
-    fclose(f);
+    config_cache_free(cache);
 
     return 1;
 }
@@ -456,6 +467,7 @@ static const char *find_alias(const char *name)
     char aname[64];
     int i;
     int n;
+    int j;
 
     /* Convert name to uppercase */
     n = (int)strlen(name);
@@ -473,15 +485,13 @@ static const char *find_alias(const char *name)
         int an;
         an = (int)strlen(g_aliases[i].name);
 
-        if (an >= (int)sizeof(aname)) an = (int)sizeof(aname) - 1;
-        {
-            int j;
+        if (an >= (int)sizeof(aname))
+            an = (int)sizeof(aname) - 1;
 
-            for (j = 0; j < an; j++)
-                aname[j] = (char)toupper((unsigned char)g_aliases[i].name[j]);
+        for (j = 0; j < an; j++)
+            aname[j] = (char)toupper((unsigned char)g_aliases[i].name[j]);
 
-            aname[an] = '\0';
-        }
+        aname[an] = '\0';
 
         if (strcmp(upper, aname) == 0)
             return g_aliases[i].path;
@@ -508,20 +518,20 @@ static int parse_srif(const char *path, SRIF *srif)
 
     while (fgets(line, sizeof(line), f))
     {
-        str_trim(line);
-        if (!line[0])
-            continue;
+        char *p = strchr(line, '\n');
 
-        token[0] = '\0';
-        value[0] = '\0';
+        if (p)
+            *p = '\0';
+
+        p = strchr(line, '\r');
+
+        if (p)
+            *p = '\0';
 
         if (sscanf(line, "%1023s %1023[^\n]", token, value) < 1)
             continue;
 
         str_upper(token);
-
-        if (!value[0])
-            continue;
 
         if (!strcmp(token, "SYSOP"))
             safe_strncpy(srif->sysop, value, (int)sizeof(srif->sysop));
@@ -573,7 +583,6 @@ static int parse_srif(const char *path, SRIF *srif)
     return srif->got_request_list;
 }
 
-/* Logging */
 static void do_log(const char *logpath, const char *msg)
 {
     FILE *lf;
@@ -597,9 +606,6 @@ static void do_log(const char *logpath, const char *msg)
     }
 }
 
-/* serve_one -- resolve one request name, check password/timestamp/update
- * write to response list. Returns 1 if served
- */
 static int serve_one(const char *req_name, const char *found_path, const char *req_pass, long req_newer, int req_update, const SRIF *srif, FILE *rsp_f, const char *log_path, char *logbuf, int logbuf_size)
 {
     long fsize;
@@ -728,8 +734,8 @@ int main(int argc, char *argv[])
 
     if (!g_conf.pubdir[0])
     {
-        fprintf(stderr, "srifreq: pubdir not set\n");
-        config_free();
+        do_log(g_conf.logfile, "ERROR: pubdir not set in config");
+        srifreq_config_cleanup();
         return 1;
     }
 
@@ -745,8 +751,7 @@ int main(int argc, char *argv[])
     {
         snprintf(logbuf, sizeof(logbuf), "ERROR: cannot parse SRIF or missing RequestList: %s", srif_path);
         do_log(g_conf.logfile, logbuf);
-        fprintf(stderr, "srifreq: %s\n", logbuf);
-        config_free();
+        srifreq_config_cleanup();
         return 1;
     }
 
@@ -755,7 +760,7 @@ int main(int argc, char *argv[])
     {
         snprintf(logbuf, sizeof(logbuf), "DENIED: system is UNLISTED (aka: %s)", srif.aka);
         do_log(g_conf.logfile, logbuf);
-        config_free();
+        srifreq_config_cleanup();
         return 1;
     }
 
@@ -775,7 +780,7 @@ int main(int argc, char *argv[])
     {
         snprintf(logbuf, sizeof(logbuf), "WARN: RequestList not available: %s", srif.request_list);
         do_log(g_conf.logfile, logbuf);
-        config_free();
+        srifreq_config_cleanup();
         return 0;
     }
 
@@ -1018,7 +1023,7 @@ int main(int argc, char *argv[])
     /* Save tracking data */
     tracking_save();
 
-    config_free();
+    srifreq_config_cleanup();
 
     return (found_count > 0) ? 0 : 1;
 }

@@ -400,3 +400,281 @@ int make_abs_path(const char *src, char *dst, int dstlen)
     return 0;
 #endif
 }
+
+/* parse_config_line -- Parse a config line into key and value
+ * Handles: BOM, leading/trailing whitespace, tabs, comments inline (#)
+ * Returns 1 if valid key=value parsed, 0 if blank/comment/invalid
+ */
+int parse_config_line(const char *line, char *key, int klen, char *val, int vlen)
+{
+    const unsigned char *p = (const unsigned char *)line;
+    char *kdst, *vdst;
+    int kcnt = 0, vcnt = 0;
+
+    if (!line || !key || klen <= 0 || !val || vlen <= 0)
+        return 0;
+
+    /* Skip UTF-8 BOM */
+    if (p[0] == 0xEF && p[1] == 0xBB && p[2] == 0xBF)
+        p += 3;
+
+    /* Skip leading whitespace */
+    while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+        p++;
+
+    /* Skip blank lines and comments */
+    if (*p == '\0' || *p == '#' || *p == ';')
+        return 0;
+
+    /* Parse key */
+    kdst = key;
+    while (*p && *p != ' ' && *p != '\t' && *p != '=' && kcnt < klen - 1)
+    {
+        *kdst++ = (char)*p++;
+        kcnt++;
+    }
+    *kdst = '\0';
+
+    if (kcnt == 0)
+        return 0;
+
+    /* Skip separator (spaces, tabs, =) */
+    while (*p == ' ' || *p == '\t' || *p == '=')
+        p++;
+
+    /* Parse value until comment or end of line */
+    vdst = val;
+    while (*p && *p != '#' && *p != '\r' && *p != '\n' && vcnt < vlen - 1)
+    {
+        *vdst++ = (char)*p++;
+        vcnt++;
+    }
+    *vdst = '\0';
+
+    /* Trim trailing whitespace from value */
+    while (vcnt > 0 && (val[vcnt - 1] == ' ' || val[vcnt - 1] == '\t'))
+    {
+        val[--vcnt] = '\0';
+    }
+
+    return (vcnt > 0) ? 1 : 1; /* Even if value is empty, key is valid */
+}
+
+/* config_get -- Open config file and return value for a specific key
+ * Returns 1 if found, 0 if not found or error
+ */
+int config_get(const char *filename, const char *key, char *val, int vlen)
+{
+    FILE *f;
+    char line[MAX_LINE];
+    char kbuf[64];
+    int found = 0;
+
+    if (!filename || !key || !val || vlen <= 0)
+        return 0;
+
+    f = fopen(filename, "r");
+
+    if (!f)
+        return 0;
+
+    while (fgets(line, sizeof(line), f))
+    {
+        kbuf[0] = '\0';
+        val[0] = '\0';
+
+        if (parse_config_line(line, kbuf, (int)sizeof(kbuf), val, vlen))
+        {
+            if (strcmp(kbuf, key) == 0)
+            {
+                found = 1;
+                break;
+            }
+        }
+    }
+
+    fclose(f);
+    return found;
+}
+
+/* parse_size -- Parse size string with suffixes (k, K, m, M, g, G)
+ * Plain number = bytes. Returns size in bytes, or 0 on error
+ */
+long parse_size(const char *s)
+{
+    long num;
+    char suffix;
+    int n;
+
+    if (!s || !s[0])
+        return 0;
+
+    n = sscanf(s, "%ld%c", &num, &suffix);
+
+    if (n == 1)
+        return num; /* Plain bytes */
+
+    if (n == 2)
+    {
+        suffix = (char)tolower((unsigned char)suffix);
+
+        switch (suffix)
+        {
+        case 'k':
+            return num * 1024;
+        case 'm':
+            return num * 1024 * 1024;
+        case 'g':
+            return num * 1024 * 1024 * 1024;
+        default:
+            return 0; /* Invalid suffix */
+        }
+    }
+
+    return 0;
+}
+
+/* parse_time -- Parse time string with suffixes (s, m, h, d)
+ * Plain number = seconds. Returns time in seconds, or 0 on error
+ */
+long parse_time(const char *s)
+{
+    long num;
+    char suffix;
+    int n;
+
+    if (!s || !s[0])
+        return 0;
+
+    n = sscanf(s, "%ld%c", &num, &suffix);
+
+    if (n == 1)
+        return num; /* Plain seconds */
+
+    if (n == 2)
+    {
+        suffix = (char)tolower((unsigned char)suffix);
+
+        switch (suffix)
+        {
+        case 's':
+            return num;
+        case 'm':
+            return num * 60;
+        case 'h':
+            return num * 60 * 60;
+        case 'd':
+            return num * 60 * 60 * 24;
+        default:
+            return 0; /* Invalid suffix */
+        }
+    }
+
+    return 0;
+}
+
+/* Config cache in memory implementation */
+typedef struct ConfigEntry
+{
+    char key[64];
+    char value[MAXPATHLEN];
+    struct ConfigEntry *next;
+} ConfigEntry;
+
+struct ConfigCache
+{
+    ConfigEntry *entries;
+    int count;
+};
+
+/* config_load -- Load entire config file into memory cache
+ * Returns cache pointer on success, NULL on error
+ */
+ConfigCache *config_load(const char *filename)
+{
+    FILE *f;
+    char line[MAX_LINE];
+    char key[64], val[MAXPATHLEN];
+    ConfigCache *cache;
+    ConfigEntry *entry;
+
+    if (!filename)
+        return NULL;
+
+    f = fopen(filename, "r");
+    if (!f)
+        return NULL;
+
+    cache = (ConfigCache *)malloc(sizeof(ConfigCache));
+    if (!cache)
+    {
+        fclose(f);
+        return NULL;
+    }
+
+    cache->entries = NULL;
+    cache->count = 0;
+
+    while (fgets(line, sizeof(line), f))
+    {
+        key[0] = '\0';
+        val[0] = '\0';
+
+        if (!parse_config_line(line, key, (int)sizeof(key), val, (int)sizeof(val)))
+            continue;
+
+        entry = (ConfigEntry *)malloc(sizeof(ConfigEntry));
+        if (!entry)
+            continue;
+
+        safe_strncpy(entry->key, key, (int)sizeof(entry->key));
+        safe_strncpy(entry->value, val, (int)sizeof(entry->value));
+        entry->next = cache->entries;
+        cache->entries = entry;
+        cache->count++;
+    }
+
+    fclose(f);
+    return cache;
+}
+
+/* config_lookup -- Look up a key in cached config
+ * Returns 1 if found, 0 if not found
+ */
+int config_lookup(ConfigCache *cache, const char *key, char *val, int vlen)
+{
+    ConfigEntry *entry;
+
+    if (!cache || !key || !val || vlen <= 0)
+        return 0;
+
+    for (entry = cache->entries; entry; entry = entry->next)
+    {
+        if (strcmp(entry->key, key) == 0)
+        {
+            safe_strncpy(val, entry->value, vlen);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/* config_cache_free -- Free cached config memory */
+void config_cache_free(ConfigCache *cache)
+{
+    ConfigEntry *entry, *next;
+
+    if (!cache)
+        return;
+
+    entry = cache->entries;
+    while (entry)
+    {
+        next = entry->next;
+        free(entry);
+        entry = next;
+    }
+
+    free(cache);
+}
