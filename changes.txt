@@ -16,6 +16,7 @@ readcfg.c:
 
 inbound.c:
 - Fixed double PATH_SEPARATOR: strnzcat(PATH_SEPARATOR) now checks if path already ends with separator (5 locations)
+- Fixed resource leak: close(fd) when fdopen() fails
 
 server.c:
 - Fixed use-after-free: config->rescan_delay saved to local variable before main loop, re-read from new config after checkcfg() reload
@@ -80,23 +81,37 @@ server.c:
 misc/decompress.c:
 - Decompress FTN day bundles (.SU/.MO/.TU/.WE/.TH/.FR/.SA)
 - Uses MAXPATHLEN from portable.h instead of local #define
+- Replaced local is_safe_filename() with portable.c version
+- Fixed: validate basename only, not full path
+- Fixed: basename extraction now supports Windows backslash separator (\)
+- Added validation: inbound must be a directory
+- Added validation: outdir must be a directory
 
 misc/freq.c:
 - Create .req/.clo files (ASO flat layout, BSO BinkleyStyle layout)
 - Uses MAXPATHLEN from portable.h
 - Added --zone-ext option: use zone extension (outbound.002/) with --bso
 - Default BSO format: outbound/ (no zone extension, binkd standard)
+- Added validation: outbound must be a directory
+- Added validation: filenames must be safe
 
 misc/nodelist.c:
 - Compile FidoNet nodelist to binkd.conf node lines (extracts IBN/INA flags)
 - Uses MAX_LINE from portable.h
 - Uses MAXPATHLEN from portable.h
+- Added --pointlist option: process pointlist format (Boss/Point styles per FTS-5002)
+- Supports Boss format: Boss,Z:N/N followed by point entries
+- Supports Point format: Point,N,... (FTS-5002 2.2)
+- In pointlist mode, leading comma entries are treated as points (Boss format 2.1)
 
 misc/process_tic.c:
 - Process .tic files to filebox (supports config file and legacy args)
 - Uses MAXPATHLEN from portable.h
 - Uses MAX_LINE from portable.h
 - Updated parse_config() to use portable.c parse_config_line()
+- Added validation: inbound must be a directory
+- Added validation: logfile, filelist, newfiles, ticlog must be regular files
+- Added validation: .tic files must be regular files
 
 misc/srifreq.c:
 - Reimplementation in C of pgul's misc/srifreq shell script (password protection, aliases, wildcards, rate limiting)
@@ -106,9 +121,13 @@ misc/srifreq.c:
 - Updated load_config() to use portable.c config_load(), config_lookup(), config_cache_free()
 - Renamed local config_free() to srifreq_config_cleanup() to avoid conflict with portable.c
 - Error messages now go to log file (config logfile) instead of stderr
+- Added validation: pubdir must be a directory
+- Added validation: logfile, aliases, trackfile must be regular files
+- Added validation: private paths must be directories
 
 misc/portable.c:
 - Shared implementations: string utilities, file operations, path utilities
+- Added is_safe_filename(): validate filename
 - Added parse_config_line(): robust config line parser (BOM, tabs, comments inline, whitespace)
 - Added config_get(): lookup single key in config file
 - Added config_load(): load entire config into memory cache
@@ -119,20 +138,21 @@ misc/portable.c:
 
 misc/portable.h:
 - Portable declarations and platform-specific includes (POSIX, Win32, OS/2, DOS, AmigaOS)
+- Added is_safe_filename() declaration
 
-misc/decompress.txt:
+doc/decompress.txt:
 - Usage documentation for decompress utility
 
-misc/freq.txt:
+doc/freq_new.txt:
 - Usage documentation for freq utility
 
-misc/nodelist.txt:
+doc/nodelist.txt:
 - Usage documentation for nodelist utility
 
-misc/process_tic.txt:
+doc/process_tic.txt:
 - Usage documentation and config file example for process_tic
 
-misc/srifreq.txt:
+doc/srifreq_new.txt:
 - Usage documentation, config file and aliases file examples for srifreq
 
 --- Makefile updates (all platforms) ---
@@ -211,6 +231,14 @@ amiga/proto_amiga.c:
 - Fixed premature M_EOB: added !state->in.f to EOB condition — prevents sending M_EOB
   while a remote file is still being received (avoids "M_EOB but N files pending M_GOT"
   error on the remote side)
+- Robust M_EOB deferral: defer sending M_EOB until remote_EOB is received OR
+  while actively receiving a file (state->in.f != NULL). Timeout bounded to nettimeout/2
+  (min 5s, max 300s) to prevent deadlock vs another pure receiver. Handles clock skew
+  defensively (elapsed = (now >= start_time) ? (now - start_time) : 0)
+- Session success condition: session is OK if files were transferred (files_rcvd > 0 ||
+  files_sent > 0) and nothing is pending, even if local_EOB is not set (peer disconnected
+  during multi-batch or while deferring M_EOB - data is already safe)
+- Removed debug messages in evloop proto_amiga functions
 
 --- New Amiga-specific files (.h) ---
 

@@ -54,11 +54,8 @@ static int calc_max_sessions(BINKD_CONFIG *config, int srv_flag, int cli_flag)
 
     if (servers == 0 && clients == 0)
     {
-        Log(5, "DEBUG: Using default 2 slots (no config found)");
         return 2;
     }
-
-    Log(5, "DEBUG: Raw values: servers=%d, clients=%d", servers, clients);
 
     if (srv_flag && servers < 1)
         servers = 1;
@@ -70,8 +67,6 @@ static int calc_max_sessions(BINKD_CONFIG *config, int srv_flag, int cli_flag)
 
     if (total < 2)
         total = 2;
-
-    Log(5, "DEBUG: Calculated max_sessions=%d", total);
 
     return total;
 }
@@ -149,7 +144,6 @@ static int build_fdsets(fd_set *r, fd_set *w)
         }
     }
 
-    Log(5, "DEBUG: Sessions processed, maxfd=%d", maxfd);
     return maxfd;
 }
 
@@ -161,21 +155,14 @@ static int handle_server_accept(fd_set *r, BINKD_CONFIG *config)
 {
     int i;
 
-    Log(5, "DEBUG: Before accept loop");
-
     for (i = 0; i < sockfd_used; i++)
     {
         if (FD_ISSET(sockfd[i], r))
             do_accept(sockfd[i], config);
 
         if (binkd_exit)
-        {
-            Log(5, "DEBUG: binkd_exit during accept loop");
             return -1;
-        }
     }
-
-    Log(5, "DEBUG: After accept loop");
 
     return 0;
 }
@@ -188,13 +175,9 @@ static int advance_sessions(fd_set *r, fd_set *w, BINKD_CONFIG *config)
 {
     int i, active = 0;
 
-    Log(5, "DEBUG: Before advance sessions");
-
     for (i = 0; i < max_sessions; i++)
     {
         sess_t *s = &sessions[i];
-
-        Log(5, "DEBUG: Session %d, phase=%d, fd=%d", i, s->phase, (int)s->fd);
 
         if (s->phase == SESS_FREE)
             continue;
@@ -336,9 +319,6 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
     sockfd_used = 0;
     srand((unsigned int)time(NULL));
 
-    Log(5, "DEBUG: server_flag=%d, client_flag=%d", server_flag, client_flag);
-    Log(5, "DEBUG: max_servers=%d, max_clients=%d", config->max_servers, config->max_clients);
-
     /* Initialise session table */
     max_sessions = calc_max_sessions(config, server_flag, client_flag);
 
@@ -362,10 +342,7 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
         return;
     }
 
-    Log(5, "DEBUG: Listen sockets opened, sockfd_used=%d", sockfd_used);
-
     /* Initial outbound attempt before waiting (important for poll -p mode) */
-    Log(5, "DEBUG: Initial try_outbound before main loop");
     try_outbound(config);
     last_rescan = 0; /* Force immediate retry in first loop iteration */
 
@@ -379,7 +356,6 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
         }
 
         /* Build fd_sets */
-        Log(5, "DEBUG: Building fd_sets");
         maxfd = build_fdsets(&r, &w);
 
         tv.tv_sec = 1;
@@ -390,8 +366,6 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
         if (maxfd < 1 && (sockfd_used > 0 || n_clients > 0))
             maxfd = 1;
 
-        Log(5, "DEBUG: Calling select() with maxfd=%d", maxfd);
-
         if (maxfd == 0)
         {
             /* No sockets yet -- use Delay() instead of select(0,...)
@@ -401,8 +375,6 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
         }
         else
             n = select(maxfd + 1, &r, &w, NULL, &tv);
-
-        Log(5, "DEBUG: select() returned n=%d", n);
 
         if (binkd_exit)
         {
@@ -416,10 +388,7 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
         if (n < 0)
         {
             if (TCPERRNO == EINTR || TCPERRNO == EWOULDBLOCK)
-            {
-                Log(5, "DEBUG: select interrupted, continuing");
                 continue;
-            }
 
             if (TCPERRNO == ENOTSOCK || TCPERRNO == EBADF)
             {
@@ -435,10 +404,6 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
 
             Log(1, "select: %s", TCPERR());
             break;
-        }
-        else if (n == 0)
-        {
-            Log(5, "DEBUG: select timeout, continuing");
         }
 
         /* server: Accept new inbound connections */
@@ -462,11 +427,7 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
 
         if (now - last_rescan >= (config->rescan_delay > 0 ? config->rescan_delay : 1) || last_rescan == 0)
         {
-            Log(5, "DEBUG: Before try_outbound");
-
             try_outbound(config);
-
-            Log(5, "DEBUG: After try_outbound");
 
             if (checkcfg())
             {

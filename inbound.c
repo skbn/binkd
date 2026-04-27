@@ -367,6 +367,7 @@ fopen_again:
   if ((f = fdopen (fd, "ab")) == 0)
   {
     Log (1, "%s: %s", buf, strerror (errno));
+    close(fd);
     return 0;
   }
   fseeko(f, 0, SEEK_END);               /* Work-around MSVC bug */

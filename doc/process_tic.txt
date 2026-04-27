@@ -19,9 +19,9 @@ CONFIGURATION FILE FORMAT:
   # Lines starting with # are comments
   # Blank lines are ignored
 
-  inbound    <path>              Inbound directory (required)
-  filebox    <path>              Filebox destination (required)
-  pubdir     <path>              Public directory for --copy-public
+  inbound    <path>              Inbound directory (required, must be a directory)
+  filebox    <path>              Filebox destination (required, must be a directory)
+  pubdir     <path>              Public directory (must be a directory if specified)
   logfile    <path>              Log file path
   ticlog     <path>              TIC processing log
   filelist   <path>              File list output

@@ -13,15 +13,19 @@ CONFIGURATION FILE FORMAT:
   # Blank lines are ignored
 
   pubdir      <path>              # Public directory (no password required)
+                                  # Must be a valid directory (not a file)
   logfile     <path>              # Log file, or - to disable
   aliases     <path>              # Magic-name aliases file (optional)
   private     <path> <password>   # Private directory (requires !password)
+                                  # Must be a valid directory (not a file)
 
   # Rate limiting options (optional):
   trackfile   <path>              # File to track node download statistics
   maxfiles    <n>                 # Max files per node per time window (0=unlimited)
-  maxsize     <bytes>             # Max bytes per node per time window (0=unlimited)
-  timewindow  <seconds>           # Time window in seconds (0=no window)
+  maxsize     <size>              # Max bytes per node per time window (0=unlimited)
+                                  # Suffixes: k/K=KB, m/M=MB, g/G=GB (e.g., 50m = 50MB)
+  timewindow  <time>              # Time window (0=no window)
+                                  # Suffixes: s=sec, m=min, h=hours, d=days (e.g., 24h)
 
 ALIASES FILE FORMAT:
   # Lines starting with # are comments
@@ -42,8 +46,8 @@ EXAMPLE CONFIG FILE (srifreq.conf):
   # Rate limiting: max 10 files or 50MB per node per 24 hours
   trackfile   Work:Logs/srifreq.track
   maxfiles    10
-  maxsize     52428800
-  timewindow  86400
+  maxsize     50m               # 50 megabytes (suffix: k=KB, m=MB, g=GB)
+  timewindow  24h               # 24 hours (suffix: s=sec, m=min, h=hours, d=days)
 
 EXAMPLE ALIASES FILE (srifreq.aliases):
   # srifreq.aliases - Magic-name to file mappings

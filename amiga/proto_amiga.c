@@ -82,7 +82,6 @@ int amiga_proto_open(STATE *state, SOCKET fd, FTN_NODE *to, FTN_ADDR *fa, const 
     state->peer_name = (host && *host) ? (char *)host : state->ipaddr;
 
     /* local endpoint: Not used further, skip to avoid dangling pointer */
-
     Log(2, "%s session with %s%s%s", to ? "outgoing" : "incoming", state->peer_name, port ? ":" : "", port ? port : "");
 
     /* banner() sends M_NUL lines and ADR messages */
@@ -127,6 +126,7 @@ int amiga_proto_step(STATE *state, int readable, int writable, BINKD_CONFIG *con
         while (1)
         {
             q = 0;
+
             if (state->flo.f || (q = select_next_file(state->q, state->fa, state->nfa)) != 0)
             {
                 if (start_file_transfer(state, q, config))
@@ -141,16 +141,6 @@ int amiga_proto_step(STATE *state, int readable, int writable, BINKD_CONFIG *con
         }
     }
 
-    /* Nothing left to send — issue EOB */
-    if (!state->out.f && !state->q && !state->local_EOB && state->state != P_NULL && !state->sent_fls && !state->in.f)
-    {
-        if (!state->delay_EOB || (state->major * 100 + state->minor > 100))
-        {
-            state->local_EOB = 1;
-            msg_send2(state, M_EOB, 0, 0);
-        }
-    }
-
     /* Recv step: Only when socket is readable */
     if (readable)
     {
@@ -160,20 +150,66 @@ int amiga_proto_step(STATE *state, int readable, int writable, BINKD_CONFIG *con
 
     /*
      * send step: drive even when writable=0 if there is buffered data,
-     * pending messages, a file mid-transfer, or an EOF to flush.
+     * pending messages, a file mid-transfer, or an EOF to flush
      */
     if (writable || state->msgs || state->oleft || state->send_eof || (state->out.f && !state->off_req_sent && !state->waiting_for_GOT))
     {
         no = send_block(state, config);
-
         if (!no && no != 2)
             return APROTO_DONE_ERR;
     }
 
+    /* Nothing left to send -> issue M_EOB. Must run AFTER recv/send so any
+     * M_GOTs queued during recv go out first. Same condition as protocol.c */
+    if (!state->out.f && !state->q && !state->local_EOB && state->state != P_NULL && state->sent_fls == 0)
+    {
+        /* Defer M_EOB while peer activity may still be in flight, so all
+         * M_GOTs are sent before our M_EOB (avoids "files pending M_GOT"
+         * warnings in BinkIT and similar peers). Defer if remote_EOB has
+         * not arrived OR we are mid-receive. Bounded by nettimeout/2 to
+         * prevent deadlock vs another pure receiver (min 5s, max 300s) */
+        int defer_eob = 0;
+        int receiving_file = (state->in.f != NULL);
+
+        if (!state->remote_EOB || receiving_file)
+        {
+            /* The Amiga runs at its own pace :P */
+            time_t now;
+            time_t elapsed;
+            unsigned long max_wait;
+
+            now = safe_time();
+            elapsed = (now >= state->start_time) ? (now - state->start_time) : 0;
+
+            max_wait = (unsigned long)config->nettimeout / 2;
+
+            if (max_wait < 5)
+                max_wait = 5;
+
+            if (max_wait > 300)
+                max_wait = 300;
+
+            /* Never time-out while a file is actively being received */
+            if (receiving_file || (unsigned long)elapsed < max_wait)
+            {
+                defer_eob = 1;
+            }
+        }
+
+        if (!defer_eob)
+        {
+            if (!state->delay_EOB || (state->major * 100 + state->minor > 100))
+            {
+                state->local_EOB = 1;
+                msg_send2(state, M_EOB, 0, 0);
+            }
+        }
+    }
+
     bsy_touch(config);
 
-    /* Batch/Session-end detection — Mirrors the break logic in protocol() */
-    if (state->remote_EOB && !state->sent_fls && state->local_EOB && !state->GET_FILE_balance && !state->in.f && !state->out.f)
+    /* Batch/session-end detection - Same condition as protocol.c break logic */
+    if (state->remote_EOB && state->sent_fls == 0 && state->local_EOB && state->GET_FILE_balance == 0 && state->in.f == 0 && state->out.f == 0)
     {
         if (state->rcvdlist)
         {
@@ -212,27 +248,38 @@ int amiga_proto_step(STATE *state, int readable, int writable, BINKD_CONFIG *con
 /*
  * amiga_proto_close -- Flush remaining I/O and release STATE resources
  * Must be called after APROTO_DONE_OK or APROTO_DONE_ERR
+ * The same as in protocol.c
  */
 void amiga_proto_close(STATE *state, BINKD_CONFIG *config, int ok)
 {
     int no;
     char buf[BLK_HDR_SIZE + MAX_BLKSIZE];
-    int status = ok ? 0 : 1;
+    int status;
+
+    (void)ok; /* status is derived from state, mirroring protocol.c */
 
     /* Drain inbound queue */
     if (!state->io_error)
     {
         while ((no = recv(state->s_in, buf, (int)sizeof(buf), 0)) > 0)
-            Log(9, "purged %d bytes", no);
+            Log(9, "Purged %d bytes from input queue", no);
     }
 
-    /* Flush pending outbound messages */
-    while (!state->io_error && (state->msgs || (state->optr && state->oleft)) && send_block(state, config))
-        ;
+    /* Flush any pending outbound */
+    while (!state->io_error && (state->msgs || (state->optr && state->oleft)) && send_block(state, config));
 
-    if (ok)
+    /* Success: both EOBs exchanged and nothing pending (mirrors protocol.c)
+     * Or: files transferred and nothing pending (peer dropped during batch 2,
+     * or while we were deferring M_EOB - data is already safe) */
+    if ((state->local_EOB && state->remote_EOB && state->sent_fls == 0 &&
+         state->GET_FILE_balance == 0 && state->in.f == 0 && state->out.f == 0) ||
+        ((state->files_rcvd > 0 || state->files_sent > 0) &&
+         state->sent_fls == 0 && state->GET_FILE_balance == 0 &&
+         state->in.f == 0 && state->out.f == 0))
     {
-        log_end_of_session(0, state, config);
+        /* Successful session */
+        status = 0;
+        log_end_of_session(status, state, config);
         process_killlist(state->killlist, state->n_killlist, 's');
         inb_remove_partial(state, config);
 
@@ -241,29 +288,30 @@ void amiga_proto_close(STATE *state, BINKD_CONFIG *config, int ok)
     }
     else
     {
-        log_end_of_session(1, state, config);
+        /* Unsuccessful session */
+        status = 1;
+        log_end_of_session(status, state, config);
         process_killlist(state->killlist, state->n_killlist, 0);
 
-        if (!binkd_exit && state->to)
-            bad_try(&state->to->fa, "Bad session", BAD_IO, config);
-
-        /* Restore poll flavour if files were left mid-transfer */
-        if (state->to && tolower(state->maxflvr) != 'h')
+        if (state->to)
         {
-            Log(4, "restoring poll with '%c' flavour", state->maxflvr);
-
-            create_poll(&state->to->fa, state->maxflvr, config);
+            /* We called and there were still files in transfer -- Restore poll */
+            if (tolower(state->maxflvr) != 'h')
+            {
+                Log(4, "restoring poll with `%c' flavour", state->maxflvr);
+                create_poll(&state->to->fa, state->maxflvr, config);
+            }
         }
     }
 
     if (state->to && state->r_skipped_flag && config->hold_skipped > 0)
     {
         Log(2, "holding skipped mail for %lu sec", (unsigned long)config->hold_skipped);
-
         hold_node(&state->to->fa, safe_time() + config->hold_skipped, config);
     }
 
     deinit_protocol(state, config, status);
     evt_set(state->evt_queue);
     state->evt_queue = NULL;
+    Log(4, "session closed, quitting...");
 }

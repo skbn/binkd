@@ -30,7 +30,7 @@ static int build_aso_paths(const char *outbound, unsigned int zone, unsigned int
 }
 
 /* build_bso_paths -- BSO BinkleyStyle layout (lowercase hex)
- * use_zone_ext: 0 = outbound/ (binkd default), 1 = outbound.002/ (with zone ext) */
+ * use_zone_ext: 0 = outbound/ (binkd default), 1 = outbound.ZZZ/ (with zone ext) */
 static int build_bso_paths(const char *outbound, unsigned int zone, unsigned int net, unsigned int node, unsigned int point, int use_zone_ext, char *req_path, char *clo_path, int pathsize)
 {
     char zone_dir[FREQ_MAX_PATH];
@@ -39,8 +39,13 @@ static int build_bso_paths(const char *outbound, unsigned int zone, unsigned int
 
     if (use_zone_ext)
     {
-        /* Zone dir: <outbound>.0ZZ  (lowercase hex) binkp compatible */
-        snprintf(zone_dir, sizeof(zone_dir), "%s.%03x", outbound, zone);
+        /* Zone dir: <outbound>.ZZZ or <outbound>.ZZZZ (lowercase hex)
+         * FTS-5005: If zone > 4095, use 4 hex digits instead of 3 */
+        if (zone > 0xFFF)
+            snprintf(zone_dir, sizeof(zone_dir), "%s.%04x", outbound, zone);
+        else
+            snprintf(zone_dir, sizeof(zone_dir), "%s.%03x", outbound, zone);
+
         str_tolower(zone_dir);
         base_dir = zone_dir;
     }
@@ -88,7 +93,7 @@ int main(int argc, char *argv[])
     long newer_than = 0;         /* --newer-than <unixts> +ts suffix */
     int update = 0;              /* --update  U suffix */
     int use_bso = 0;
-    int use_zone_ext = 0; /* --zone-ext use outbound.002/ */
+    int use_zone_ext = 0; /* --zone-ext use outbound.ZZZ/ */
     int argi = 1;
     int nfiles = 0;
 
@@ -124,7 +129,21 @@ int main(int argc, char *argv[])
         }
         else if (strcmp(argv[argi], "--newer-than") == 0 && argi + 1 < argc)
         {
-            newer_than = atol(argv[++argi]);
+            /* Binkds copy */
+            /* Support both Unix timestamp (seconds since epoch) and relative time
+             * - With suffix (7d, 1h, 30m): treated as relative time from now
+             * - Plain number: if > 1 year in seconds (31536000), treated as Unix timestamp
+             * otherwise treated as relative seconds */
+            char *time_arg = argv[++argi];
+            long parsed = parse_time(time_arg);
+
+            /* Heuristic: if value has no letter suffix and is > 1 year in seconds,
+             * assume it's an absolute Unix timestamp (year 2001+)
+             * Otherwise it's relative time */
+            if (parsed > 31536000L)  /* > 1 year ≈ Unix timestamps from 1971+ */
+                newer_than = parsed; /* Absolute Unix timestamp */
+            else
+                newer_than = time(NULL) - parsed; /* Relative: seconds/minutes/hours/days ago */
             argi++;
         }
         else
@@ -133,12 +152,14 @@ int main(int argc, char *argv[])
 
     if (argc - argi < 3)
     {
-        fprintf(stderr, "Usage: freq [--bso|--aso] [--zone-ext] [--update] [--password <pass>] [--newer-than <unixts>] <outbound> <address> <files>...\n");
+        fprintf(stderr, "Usage: freq [--bso|--aso] [--zone-ext] [--update] [--password <pass>] [--newer-than <time>] <outbound> <address> <files>...\n");
         fprintf(stderr, "  --bso            Use BSO outbound structure (default: outbound/)\n");
         fprintf(stderr, "  --zone-ext       Use zone extension (outbound.002/) with --bso\n");
         fprintf(stderr, "  --aso            Use ASO flat outbound structure\n");
         fprintf(stderr, "  --password <pw>  append !pw to each request line\n");
-        fprintf(stderr, "  --newer-than <t> append +<unix_timestamp> (request if newer)\n");
+        fprintf(stderr, "  --newer-than <t> append +<timestamp> (request if file is newer)\n");
+        fprintf(stderr, "                   <t> can be: 7d=7 days, 1h=1 hour, 30m=30 min\n");
+        fprintf(stderr, "                   Or Unix timestamp: values > 1 year = absolute\n");
         fprintf(stderr, "  --update         append U flag (update request)\n");
         fprintf(stderr, "Multiple filenames can be listed after the address.\n");
         return 1;
@@ -148,8 +169,18 @@ int main(int argc, char *argv[])
     arg_addr = argv[argi++];
 
     /* Remaining args are filenames */
+    if (!make_abs_path(arg_outbound, abs_outbound, (int)sizeof(abs_outbound)))
+    {
+        fprintf(stderr, "freq: cannot resolve outbound path: %s\n", arg_outbound);
+        return 1;
+    }
 
-    make_abs_path(arg_outbound, abs_outbound, (int)sizeof(abs_outbound));
+    if (!is_directory(abs_outbound))
+    {
+        fprintf(stderr, "freq: outbound is not a directory: %s\n", abs_outbound);
+        return 1;
+    }
+
     outbound = abs_outbound;
 
     safe_strncpy(addr_copy, arg_addr, (int)sizeof(addr_copy));
@@ -172,7 +203,7 @@ int main(int argc, char *argv[])
     {
         if (build_aso_paths(abs_outbound, zone, net, node, point, req_path, clo_path, FREQ_MAX_PATH) < 0)
         {
-            fprintf(stderr, "freq: cannot create outbound dir: %s\n", outbound);
+            fprintf(stderr, "freq: cannot create ASO outbound directory: %s\n", outbound);
             return 1;
         }
     }
@@ -189,6 +220,14 @@ int main(int argc, char *argv[])
     for (; argi < argc; argi++)
     {
         const char *fname = argv[argi];
+
+        /* Validate filename for safety */
+        if (!is_safe_filename(fname))
+        {
+            fprintf(stderr, "freq: invalid filename: %s\n", fname);
+            fclose(f);
+            return 1;
+        }
 
         /* Build request line: filename [!password] [+timestamp] [U] */
         fprintf(f, "%s", fname);

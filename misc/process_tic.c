@@ -201,6 +201,7 @@ static void append_filelist(const char *listpath, const char *file_name, long fi
         return;
 
     f = fopen(listpath, "a");
+
     if (!f)
         return;
 
@@ -357,7 +358,10 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
     path_join(dst_path, sizeof(dst_path), area_dir, file_name);
 
     if (!path_exists(src_path))
+    {
+        fprintf(stderr, "process_tic: referenced file not found: %s\n", src_path);
         return;
+    }
 
     if (!ensure_dir(filebox) || !ensure_dir(area_dir))
         return;
@@ -369,13 +373,19 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
         path_join(pub_dst, sizeof(pub_dst), pubdir, file_name);
 
         if (ensure_dir(pubdir))
-            copy_file(src_path, pub_dst);
+        {
+            if (!copy_file(src_path, pub_dst))
+                fprintf(stderr, "process_tic: failed to copy to pubdir: %s -> %s\n", src_path, pub_dst);
+        }
     }
 
     fsize = get_file_size(src_path);
 
     if (!move_file(src_path, dst_path))
+    {
+        fprintf(stderr, "process_tic: failed to move file: %s -> %s\n", src_path, dst_path);
         return;
+    }
 
     write_log(logfile, file_name, area_name, origin_name, from_name, src_path, dst_path);
     write_ticlog(ticlog, file_name, area_name, origin_name, from_name, src_path, dst_path);
@@ -412,28 +422,89 @@ static int parse_config(const char *conffile)
 
     /* Read each field using config_lookup() */
     if (config_lookup(cache, "inbound", val, sizeof(val)))
+    {
+        if (!is_directory(val))
+        {
+            fprintf(stderr, "process_tic: inbound is not a directory: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(cfg.inbound, val, (int)sizeof(cfg.inbound));
+    }
 
     if (config_lookup(cache, "filebox", val, sizeof(val)))
+    {
+        if (!is_directory(val))
+        {
+            fprintf(stderr, "process_tic: filebox is not a directory: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(cfg.filebox, val, (int)sizeof(cfg.filebox));
+    }
 
     if (config_lookup(cache, "pubdir", val, sizeof(val)))
     {
+        if (!is_directory(val))
+        {
+            fprintf(stderr, "process_tic: pubdir is not a directory: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(cfg.pubdir, val, (int)sizeof(cfg.pubdir));
         cfg.copypublic = 1;
     }
 
     if (config_lookup(cache, "logfile", val, sizeof(val)))
+    {
+        if (val[0] && !is_regular_file(val) && strcmp(val, "-") != 0)
+        {
+            fprintf(stderr, "process_tic: logfile is not a regular file: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(cfg.logfile, val, (int)sizeof(cfg.logfile));
+    }
 
     if (config_lookup(cache, "filelist", val, sizeof(val)))
+    {
+        if (val[0] && !is_regular_file(val))
+        {
+            fprintf(stderr, "process_tic: filelist is not a regular file: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(cfg.filelist, val, (int)sizeof(cfg.filelist));
+    }
 
     if (config_lookup(cache, "newfiles", val, sizeof(val)))
+    {
+        if (val[0] && !is_regular_file(val))
+        {
+            fprintf(stderr, "process_tic: newfiles is not a regular file: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(cfg.newfiles, val, (int)sizeof(cfg.newfiles));
+    }
 
     if (config_lookup(cache, "ticlog", val, sizeof(val)))
+    {
+        if (val[0] && !is_regular_file(val) && strcmp(val, "-") != 0)
+        {
+            fprintf(stderr, "process_tic: ticlog is not a regular file: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(cfg.ticlog, val, (int)sizeof(cfg.ticlog));
+    }
 
     config_cache_free(cache);
 
@@ -507,10 +578,19 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    if (!is_directory(inbound))
+    {
+        fprintf(stderr, "process_tic: inbound is not a directory: %s\n", inbound);
+        return 1;
+    }
+
     dp = opendir(inbound);
 
     if (!dp)
+    {
+        fprintf(stderr, "process_tic: cannot open inbound directory: %s\n", inbound);
         return 1;
+    }
 
     found = 0;
 
@@ -524,6 +604,13 @@ int main(int argc, char *argv[])
             continue;
 
         path_join(ticpath, sizeof(ticpath), inbound, de->d_name);
+
+        if (!is_regular_file(ticpath))
+        {
+            fprintf(stderr, "process_tic: not a regular file: %s\n", ticpath);
+            continue;
+        }
+
         process_one_tic(ticpath, inbound, filebox, copypublic, pubdir, logfile, filelist, newfiles, ticlog);
         found++;
     }

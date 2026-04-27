@@ -73,6 +73,7 @@ static int is_ftn_bundle(const char *filename)
             }
         }
     }
+
     return 0;
 }
 
@@ -93,6 +94,35 @@ static void delete_file(const char *path)
 static int run_decompressor(int fmt, const char *path, const char *outdir)
 {
     char cmd[MAX_CMD];
+    const char *basename;
+
+    /* Security: validate basename for invalid characters (not full path) */
+    /* Find the last path separator (/ : \) to extract basename */
+    basename = strrchr(path, '/');
+    
+    if (!basename)
+        basename = strrchr(path, ':'); /* Amiga volume separator */
+
+    if (!basename)
+        basename = strrchr(path, '\\'); /* Windows separator */
+
+    if (!basename)
+        basename = path;
+    else
+        basename++; /* Skip the separator */
+
+    if (!is_safe_filename(basename))
+    {
+        fprintf(stderr, "decompress: invalid filename: %s\n", basename);
+        return -1;
+    }
+
+    /* Validate outdir is a directory (multiplatform) */
+    if (!is_directory(outdir))
+    {
+        fprintf(stderr, "decompress: outdir is not a directory: %s\n", outdir);
+        return -1;
+    }
 
     switch (fmt)
     {
@@ -124,7 +154,12 @@ static int run_decompressor(int fmt, const char *path, const char *outdir)
         return -1;
     }
 
-    return system(cmd);
+    int rc = system(cmd);
+
+    if (rc == 0 || rc == 1)
+        return 0;
+
+    return -1;
 }
 
 int main(int argc, char *argv[])
@@ -150,6 +185,18 @@ int main(int argc, char *argv[])
     inbound = argv[1];
     outdir = argv[2];
 
+    if (!is_directory(inbound))
+    {
+        fprintf(stderr, "decompress: inbound is not a directory: %s\n", inbound);
+        return 1;
+    }
+
+    if (!is_directory(outdir))
+    {
+        fprintf(stderr, "decompress: outdir is not a directory: %s\n", outdir);
+        return 1;
+    }
+
     dp = opendir(inbound);
 
     if (dp == NULL)
@@ -167,6 +214,12 @@ int main(int argc, char *argv[])
             continue;
 
         path_join(path, MAXPATHLEN, inbound, entry->d_name);
+
+        if (!is_regular_file(path))
+        {
+            fprintf(stderr, "decompress: not a regular file: %s\n", path);
+            continue;
+        }
 
         fmt = detect_format(path);
 

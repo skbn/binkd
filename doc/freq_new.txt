@@ -18,11 +18,20 @@ OPTIONS:
                        Format: <outbound>/Z.N.NODE.POINT.req
 
   --bso                Binkley Style Outbound - hex directory layout
-                       No point: <outbound>.0ZZ/nnnnnnnn.req
-                       Point:   <outbound>.0ZZ/nnnnnnnn.pnt/pppppppp.req
+                       No point: <outbound>.ZZZ/nnnnnnnn.req
+                       Point:   <outbound>.ZZZ/nnnnnnnn.pnt/pppppppp.req
+                       Zones > 4095 use 4-digit hex: <outbound>.ZZZZ/nnnnnnnn.req
+
+  --zone-ext           Use zone extension with --bso (outbound.002/)
+                       Default (without --zone-ext): outbound/ (binkd default)
 
   --password <pw>      Append !pw suffix to each request line
-  --newer-than <t>     Append +<unix_timestamp> (request only if file is newer)
+  --newer-than <t>     Append +<timestamp> (request only if file is newer)
+                       <t> can be relative time with suffix:
+                         7d = 7 days ago, 1h = 1 hour ago, 30m = 30 minutes ago
+                         Suffixes: d=days, h=hours, m=minutes, s=seconds
+                       Or Unix timestamp (absolute seconds since epoch):
+                         Values > 31536000 (1 year) treated as absolute timestamp
   --update             Append U flag (update request, checks TRANX)
 
 EXAMPLES:
@@ -31,6 +40,8 @@ EXAMPLES:
   freq --bso /var/spool/binkd/outbound 2:123/456 door.zip
   freq --bso C:\Binkd\Outbound 1:100/200 update.lzh
   freq --password secret --newer-than 1234567890 Work:Outbound 39:190/101 file.zip
+  freq --newer-than 7d Work:Outbound 39:190/101 weekly-update.zip   (files newer than 7 days)
+  freq --newer-than 1h Work:Outbound 39:190/101 latest-files.zip    (files newer than 1 hour)
   freq --update Work:Outbound 39:190/101 file1.zip file2.zip file3.zip
 
 CONFIGURATION FILE:

@@ -91,7 +91,8 @@ OBJS= \
  "$(OBJDIR)\nt\breaksig.obj" "$(OBJDIR)\nt\dirwin32.obj"                    \
  "$(OBJDIR)\nt\getfree.obj"  "$(OBJDIR)\nt\sem.obj"                         \
  "$(OBJDIR)\nt\TCPErr.obj"   "$(OBJDIR)\nt\tray.obj"                        \
- "$(OBJDIR)\nt\w32tools.obj" "$(OBJDIR)\nt\WSock.obj"
+ "$(OBJDIR)\nt\w32tools.obj" "$(OBJDIR)\nt\WSock.obj"                       \
+ "$(OBJDIR)\bsycleanup.obj"
 
 RESOBJS= "$(OBJDIR)\nt\binkdres.res"
 

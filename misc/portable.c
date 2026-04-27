@@ -154,7 +154,14 @@ int copy_file(const char *src, const char *dst)
     }
 
     while ((n = (int)fread(buf, 1, sizeof(buf), in)) > 0)
-        fwrite(buf, 1, (size_t)n, out);
+    {
+        if (fwrite(buf, 1, (size_t)n, out) != (size_t)n)
+        {
+            fclose(out);
+            fclose(in);
+            return 0; /* Write error (disk full, etc.) */
+        }
+    }
 
     fclose(out);
     fclose(in);
@@ -219,6 +226,107 @@ int port_path_exists(const char *p)
     struct stat st;
     return (stat(p, &st) == 0) ? 1 : 0;
 #endif
+}
+
+/* is_directory -- Check if path is a directory */
+int is_directory(const char *p)
+{
+#ifdef AMIGA
+    BPTR l = Lock((STRPTR)p, ACCESS_READ);
+    struct FileInfoBlock *fib;
+    int res = 0;
+
+    if (l)
+    {
+        fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+
+        if (fib)
+        {
+            if (Examine(l, fib))
+                res = (fib->fib_DirEntryType >= 0) ? 1 : 0;
+
+            FreeDosObject(DOS_FIB, fib);
+        }
+
+        UnLock(l);
+    }
+    return res;
+#else
+    struct stat st;
+
+    if (stat(p, &st) != 0)
+        return 0;
+
+    return (S_ISDIR(st.st_mode)) ? 1 : 0;
+#endif
+}
+
+/* is_regular_file -- Check if path is a regular file (not directory, not device) */
+int is_regular_file(const char *p)
+{
+#ifdef AMIGA
+    BPTR l = Lock((STRPTR)p, ACCESS_READ);
+    struct FileInfoBlock *fib;
+    int res = 0;
+
+    if (l)
+    {
+        fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+
+        if (fib)
+        {
+            if (Examine(l, fib))
+                res = (fib->fib_DirEntryType < 0) ? 1 : 0; /* Files have negative type */
+
+            FreeDosObject(DOS_FIB, fib);
+        }
+
+        UnLock(l);
+    }
+    return res;
+#else
+    struct stat st;
+
+    if (stat(p, &st) != 0)
+        return 0;
+
+    return (S_ISREG(st.st_mode)) ? 1 : 0;
+#endif
+}
+
+/* is_safe_filename -- Validate filename
+ * Whitelist approach: only allows alphanumeric, dot, underscore, hyphen
+ * Rejects: ., .., names starting with -, spaces
+ * Returns 1 if safe, 0 if invalid */
+int is_safe_filename(const char *name)
+{
+    size_t len;
+
+    if (!name || !*name)
+        return 0;
+
+    len = strlen(name);
+    if (len == 0 || len > 255)
+        return 0;
+
+    /* Avoid "." and ".." */
+    if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
+        return 0;
+
+    /* Do not allow names starting with '-' */
+    if (name[0] == '-')
+        return 0;
+    
+    /* Whitelist: only alphanumeric, dot, underscore, hyphen */
+    for (size_t i = 0; i < len; i++)
+    {
+        unsigned char c = (unsigned char)name[i];
+
+        if (!(isalnum(c) || c == '.' || c == '_' || c == '-'))
+            return 0;
+    }
+
+    return 1;
 }
 
 /* port_mkdir_one -- Create single directory (native per OS) */
@@ -428,11 +536,13 @@ int parse_config_line(const char *line, char *key, int klen, char *val, int vlen
 
     /* Parse key */
     kdst = key;
+
     while (*p && *p != ' ' && *p != '\t' && *p != '=' && kcnt < klen - 1)
     {
         *kdst++ = (char)*p++;
         kcnt++;
     }
+
     *kdst = '\0';
 
     if (kcnt == 0)
@@ -444,20 +554,20 @@ int parse_config_line(const char *line, char *key, int klen, char *val, int vlen
 
     /* Parse value until comment or end of line */
     vdst = val;
+
     while (*p && *p != '#' && *p != '\r' && *p != '\n' && vcnt < vlen - 1)
     {
         *vdst++ = (char)*p++;
         vcnt++;
     }
+
     *vdst = '\0';
 
     /* Trim trailing whitespace from value */
     while (vcnt > 0 && (val[vcnt - 1] == ' ' || val[vcnt - 1] == '\t'))
-    {
         val[--vcnt] = '\0';
-    }
 
-    return (vcnt > 0) ? 1 : 1; /* Even if value is empty, key is valid */
+    return (vcnt > 0) ? 1 : 0; /* Return 0 if no value found */
 }
 
 /* config_get -- Open config file and return value for a specific key
@@ -494,6 +604,7 @@ int config_get(const char *filename, const char *key, char *val, int vlen)
     }
 
     fclose(f);
+
     return found;
 }
 
@@ -669,6 +780,7 @@ void config_cache_free(ConfigCache *cache)
         return;
 
     entry = cache->entries;
+
     while (entry)
     {
         next = entry->next;

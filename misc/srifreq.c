@@ -158,16 +158,52 @@ static int load_config(const char *path)
     }
 
     if (config_lookup(cache, "pubdir", val, sizeof(val)))
+    {
+        if (!is_directory(val))
+        {
+            fprintf(stderr, "srifreq: pubdir is not a directory: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(g_conf.pubdir, val, (int)sizeof(g_conf.pubdir));
+    }
 
     if (config_lookup(cache, "logfile", val, sizeof(val)))
+    {
+        if (val[0] && !is_regular_file(val) && strcmp(val, "-") != 0)
+        {
+            fprintf(stderr, "srifreq: logfile is not a regular file: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(g_conf.logfile, val, (int)sizeof(g_conf.logfile));
+    }
 
     if (config_lookup(cache, "aliases", val, sizeof(val)))
+    {
+        if (val[0] && !is_regular_file(val) && strcmp(val, "-") != 0)
+        {
+            fprintf(stderr, "srifreq: aliases file is not a regular file: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(g_conf.aliases, val, (int)sizeof(g_conf.aliases));
+    }
 
     if (config_lookup(cache, "trackfile", val, sizeof(val)))
+    {
+        if (val[0] && !is_regular_file(val))
+        {
+            fprintf(stderr, "srifreq: trackfile is not a regular file: %s\n", val);
+            config_cache_free(cache);
+            return 0;
+        }
+
         safe_strncpy(g_conf.trackfile, val, (int)sizeof(g_conf.trackfile));
+    }
 
     if (config_lookup(cache, "maxfiles", val, sizeof(val)))
         g_conf.maxfiles = atoi(val);
@@ -180,6 +216,7 @@ static int load_config(const char *path)
 
     /* Handle private dirs - need to re-scan file for password field */
     f = fopen(path, "r");
+
     if (f)
     {
         char line[MAX_LINE];
@@ -197,7 +234,15 @@ static int load_config(const char *path)
                 sscanf(line, "%*s %*s %63s", pw);
 
                 if (pw[0])
+                {
+                    if (!is_directory(v))
+                    {
+                        fprintf(stderr, "srifreq: private path is not a directory: %s\n", v);
+                        continue;
+                    }
+
                     config_add_private(v, pw);
+                }
             }
         }
 
@@ -250,6 +295,7 @@ static void tracking_load(void)
             continue;
 
         safe_strncpy(nt->aka, aka, (int)sizeof(nt->aka));
+
         nt->files = files;
         nt->bytes = bytes;
         nt->last_time = (time_t)timestamp;
@@ -878,8 +924,13 @@ int main(int argc, char *argv[])
             else
                 path_join(found_path, MAXPATHLEN, g_conf.pubdir, alias_path);
 
-            if (path_exists(found_path))
+            if (is_regular_file(found_path))
                 found_count += serve_one(req_name, found_path, req_pass, req_newer, req_update, &srif, rsp_f, g_conf.logfile, logbuf, (int)sizeof(logbuf));
+            else if (path_exists(found_path))
+            {
+                snprintf(logbuf, sizeof(logbuf), "SKIP (not a file): %s -> %s", req_name, found_path);
+                do_log(g_conf.logfile, logbuf);
+            }
             else
             {
                 snprintf(logbuf, sizeof(logbuf), "NOT FOUND (alias): %s -> %s", req_name, found_path);
@@ -898,6 +949,7 @@ int main(int argc, char *argv[])
 
             /* Scan pubdir (no password needed) */
             dp = opendir(g_conf.pubdir);
+
             if (dp)
             {
                 while ((de = readdir(dp)) != NULL)
@@ -910,7 +962,7 @@ int main(int argc, char *argv[])
 
                     path_join(found_path, MAXPATHLEN, g_conf.pubdir, de->d_name);
 
-                    if (path_exists(found_path))
+                    if (is_regular_file(found_path))
                         found_count += serve_one(de->d_name, found_path, "", req_newer, req_update, &srif, rsp_f, g_conf.logfile, logbuf, (int)sizeof(logbuf));
                 }
 
@@ -938,7 +990,11 @@ int main(int argc, char *argv[])
                 dp = opendir(pd->path);
 
                 if (!dp)
+                {
+                    snprintf(logbuf, sizeof(logbuf), "WARN: cannot open private dir: %s", pd->path);
+                    do_log(g_conf.logfile, logbuf);
                     continue;
+                }
 
                 while ((de = readdir(dp)) != NULL)
                 {
@@ -950,7 +1006,7 @@ int main(int argc, char *argv[])
 
                     path_join(found_path, MAXPATHLEN, pd->path, de->d_name);
 
-                    if (path_exists(found_path))
+                    if (is_regular_file(found_path))
                         found_count += serve_one(de->d_name, found_path, req_pass, req_newer, req_update, &srif, rsp_f, g_conf.logfile, logbuf, (int)sizeof(logbuf));
                 }
 
@@ -963,10 +1019,14 @@ int main(int argc, char *argv[])
         /* Plain filename: try pubdir first, then privdirs if password given */
         path_join(found_path, MAXPATHLEN, g_conf.pubdir, req_name);
 
-        if (path_exists(found_path))
+        if (is_regular_file(found_path))
         {
-            found_count +=
-                serve_one(req_name, found_path, req_pass, req_newer, req_update, &srif, rsp_f, g_conf.logfile, logbuf, (int)sizeof(logbuf));
+            found_count += serve_one(req_name, found_path, req_pass, req_newer, req_update, &srif, rsp_f, g_conf.logfile, logbuf, (int)sizeof(logbuf));
+        }
+        else if (path_exists(found_path))
+        {
+            snprintf(logbuf, sizeof(logbuf), "SKIP (not a file): %s", found_path);
+            do_log(g_conf.logfile, logbuf);
         }
         else if (req_pass[0])
         {
@@ -993,10 +1053,16 @@ int main(int argc, char *argv[])
 
                 path_join(found_path, MAXPATHLEN, pd->path, req_name);
 
-                if (path_exists(found_path))
+                if (is_regular_file(found_path))
                 {
                     found_count += serve_one(req_name, found_path, req_pass, req_newer, req_update, &srif, rsp_f, g_conf.logfile, logbuf, (int)sizeof(logbuf));
                     served = 1;
+                }
+                else if (path_exists(found_path))
+                {
+                    snprintf(logbuf, sizeof(logbuf), "SKIP (not a file): %s", found_path);
+                    do_log(g_conf.logfile, logbuf);
+                    served = 1; /* Stop searching, but don't count as served */
                 }
             }
             if (!served)

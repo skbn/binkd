@@ -100,6 +100,13 @@ int port_mkdir_one(const char *p);
 #define path_exists(p) port_path_exists(p)
 #define mkdir_one(p) port_mkdir_one(p)
 
+/* is_directory / is_regular_file -- path type checks */
+int is_directory(const char *p);
+int is_regular_file(const char *p);
+
+/* is_safe_filename -- Validate filename */
+int is_safe_filename(const char *name);
+
 /* safe_localtime -- thread-safe localtime, portable across all OS */
 void safe_localtime(const time_t *t, struct tm *tm);
 
