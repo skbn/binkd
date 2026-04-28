@@ -122,7 +122,12 @@ OBJS=${SRCS:.c=.o}
 
 TARGET:=$(TARGET).exe
 
-all: $(TARGET)
+# Tools use same flags as main binary
+TOOL_CFLAGS=$(DEFINES) -Wall -funsigned-char -Wno-char-subscripts -I misc
+TOOL_LFLAGS=-Los2
+TOOL_LIBS=-lsocket -lresolv
+
+all: $(TARGET) decompress process_tic freq srifreq nodelist
 
 .c.o:
 	@echo Compiling $*.c...
@@ -136,10 +141,33 @@ $(TARGET): $(OBJS) os2/resolv.a
 	@echo Linking $@...
 	@$(CC) -o $@ $(LFLAGS) $(OBJS) $(LIBS)
 
+# ---------- Utility tools (stand-alone, multi-platform) ----------
+
+decompress:
+	@echo Compiling decompress...
+	@$(CC) $(TOOL_CFLAGS) -o decompress.exe misc/decompress.c misc/portable.c os2/dirent.c $(TOOL_LFLAGS) $(TOOL_LIBS)
+
+process_tic:
+	@echo Compiling process_tic...
+	@$(CC) $(TOOL_CFLAGS) -o process_tic.exe misc/process_tic.c misc/portable.c os2/dirent.c $(TOOL_LFLAGS) $(TOOL_LIBS)
+
+freq:
+	@echo Compiling freq...
+	@$(CC) $(TOOL_CFLAGS) -o freq.exe misc/freq.c misc/portable.c $(TOOL_LFLAGS) $(TOOL_LIBS)
+
+srifreq:
+	@echo Compiling srifreq...
+	@$(CC) $(TOOL_CFLAGS) -o srifreq.exe misc/srifreq.c misc/portable.c os2/dirent.c $(TOOL_LFLAGS) $(TOOL_LIBS)
+
+nodelist:
+	@echo Compiling nodelist...
+	@$(CC) $(TOOL_CFLAGS) -o nodelist.exe misc/nodelist.c misc/portable.c $(TOOL_LFLAGS) $(TOOL_LIBS)
+
 install: all clean
 
 clean:
 	-del /n *.RES *.obj *.o os2\*.o ntlm\*.o os2\*.a *.map *~ *.bak *.b *.ini *.err core >nul 2> nul
+	-del /n binkd2*.exe decompress.exe process_tic.exe freq.exe srifreq.exe nodelist.exe >nul 2> nul
 
 depend	Makefile.dep:
 	@echo Build Makefile.dep...
