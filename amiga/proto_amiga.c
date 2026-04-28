@@ -148,7 +148,14 @@ int amiga_proto_step(STATE *state, int readable, int writable, BINKD_CONFIG *con
     if (readable)
     {
         if (!recv_block(state, config))
+        {
+            /* Peer closed connection - check if session completed successfully
+             * (files transferred, EOBs exchanged, nothing pending) */
+            if ((state->files_rcvd > 0 || state->files_sent > 0) && state->sent_fls == 0 && state->GET_FILE_balance == 0 && state->in.f == 0 && state->out.f == 0)
+                return APROTO_DONE_OK;
+
             return APROTO_DONE_ERR;
+        }
     }
 
     /*
@@ -258,8 +265,6 @@ void amiga_proto_close(STATE *state, BINKD_CONFIG *config, int ok)
     int no;
     char buf[BLK_HDR_SIZE + MAX_BLKSIZE];
     int status;
-
-    (void)ok; /* status is derived from state, mirroring protocol.c */
 
     /* Drain inbound queue */
     if (!state->io_error)

@@ -54,10 +54,10 @@ extern int n_clients;
 /* sock.c */
 void set_nonblock(SOCKET fd);
 int open_listen_sockets(BINKD_CONFIG *config);
-void close_listen_sockets(void);
+void close_listen_sockets();
 
 /* session.c */
-int sess_alloc(void);
+int sess_alloc();
 void sess_free(int idx);
 void do_accept(SOCKET lfd, BINKD_CONFIG *config);
 int start_connect(sess_t *s, BINKD_CONFIG *config);

@@ -119,7 +119,7 @@ int open_listen_sockets(BINKD_CONFIG *config)
     return 0;
 }
 
-void close_listen_sockets(void)
+void close_listen_sockets()
 {
     int i;
 

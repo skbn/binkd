@@ -50,12 +50,12 @@
 #endif
 
 /* Per-task SocketBase override */
-struct Library *_amiga_get_socket_base(void);
+struct Library *SocketBase;
 
 #ifdef SocketBase
 #undef SocketBase
 #endif
-#define SocketBase _amiga_get_socket_base()
+#define SocketBase SocketBase
 
 /* Roadshow socket-specific errno values */
 #include <sys/errno.h>
@@ -97,9 +97,8 @@ struct sockaddr_storage
 #endif
 
 /* Library base functions */
-int amiga_sock_init(void);
-void amiga_sock_cleanup(void);
-int amiga_child_sock_init(void);
+int amiga_sock_init();
+void amiga_sock_cleanup();
 
 /* getpid() is defined in sys.h for AMIGA */
 /* amiga_sleep and sleep are defined in sys.h for AMIGA */

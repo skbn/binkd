@@ -39,7 +39,7 @@ extern int client_flag;
 extern int poll_flag;
 
 /* Session table */
-int sess_alloc(void)
+int sess_alloc()
 {
     int i;
 

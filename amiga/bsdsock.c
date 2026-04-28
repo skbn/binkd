@@ -14,7 +14,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-/* Linker-compatibility global. Never used at runtime */
+/* Global bsdsocket.library handle (no threads, single task) */
 struct Library *SocketBase = NULL;
 
 /* Suppress conflicting C prototypes from clib/bsdsocket_protos.h */
@@ -27,31 +27,18 @@ struct Library *SocketBase = NULL;
 
 extern void Log(int lev, const char *s, ...);
 
-/* _amiga_get_socket_base -- returns bsdsocket.library handle for calling task */
-struct Library *_amiga_get_socket_base(void)
+int amiga_sock_init()
 {
-    return (struct Library *)FindTask(NULL)->tc_UserData;
-}
+    if (SocketBase)
+        return 0; /* already open */
 
-int amiga_sock_init(void)
-{
-    struct Task *me = FindTask(NULL);
-    struct Library *base;
+    SocketBase = OpenLibrary("bsdsocket.library", 0UL);
 
-    if (me->tc_UserData)
-        return 0; /* already open for this task */
-
-    base = OpenLibrary("bsdsocket.library", 0UL);
-
-    if (!base)
+    if (!SocketBase)
     {
         fprintf(stderr, "amiga_sock_init: cannot open bsdsocket.library\n");
         return -1;
     }
-
-    /* Store in tc_UserData and global SocketBase */
-    me->tc_UserData = (APTR)base;
-    SocketBase = base;
 
     /* Link the per-task errno to the TCP stack. */
     SetErrnoPtr(&errno, (LONG)sizeof(errno));
@@ -59,21 +46,11 @@ int amiga_sock_init(void)
     return 0;
 }
 
-void amiga_sock_cleanup(void)
+void amiga_sock_cleanup()
 {
-    struct Task *me = FindTask(NULL);
-    struct Library *base = (struct Library *)me->tc_UserData;
-
-    if (base)
+    if (SocketBase)
     {
-        me->tc_UserData = NULL;
+        CloseLibrary(SocketBase);
         SocketBase = NULL;
-        CloseLibrary(base);
     }
-}
-
-int amiga_child_sock_init(void)
-{
-    /* Child inherits tc_UserData = NULL, opens new handle */
-    return amiga_sock_init();
 }

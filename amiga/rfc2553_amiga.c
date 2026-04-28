@@ -248,8 +248,6 @@ int getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t h
 {
     const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
 
-    (void)salen;
-
     if (sa->sa_family != AF_INET)
         return EAI_ADDRFAMILY;
 

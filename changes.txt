@@ -255,6 +255,9 @@ amiga/proto_amiga.c:
 - Removed debug messages in evloop proto_amiga functions
 - Fixed memory leak: added deinit_protocol(state, config, 1) when banner() fails
 - Fixed memory leak: added deinit_protocol(state, config, 1) when server limit reached
+- Fixed session status: detect successful session when peer closes connection after
+  file transfer complete (files_rcvd > 0, sent_fls == 0, no pending files) - returns
+  APROTO_DONE_OK instead of APROTO_DONE_ERR
 
 amiga/evloop.c:
 - Fixed crash on exit: check state.ibuf != NULL before calling amiga_proto_close()
@@ -288,6 +291,17 @@ amiga/rename.c:
 
 amiga/sem.c:
 - Complete rewrite: replaced ixemul inline/strsup.h with direct Exec calls, added EVENTSEM implementation (AllocSignal/FreeSignal/Signal/Wait), added _InitEventSem/_PostSem/_WaitSem/_CleanEventSem
+
+amiga/bsdsock.c:
+- Simplified: removed FindTask()/tc_UserData per-task storage (no longer needed without threads)
+- Removed _amiga_get_socket_base() function, using SocketBase global directly
+- amiga_sock_init()/amiga_sock_cleanup() now use SocketBase global directly
+- Removed amiga_child_sock_init() (no child processes without fork)
+
+amiga/bsdsock.h:
+- Removed _amiga_get_socket_base() declaration
+- Removed #define SocketBase _amiga_get_socket_base() macro
+- Using extern struct Library *SocketBase directly
 
 --- Modified .c files (Amiga-specific changes, all under #ifdef AMIGA) ---
 
