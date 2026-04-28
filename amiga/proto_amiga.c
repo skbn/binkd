@@ -86,14 +86,17 @@ int amiga_proto_open(STATE *state, SOCKET fd, FTN_NODE *to, FTN_ADDR *fa, const 
 
     /* banner() sends M_NUL lines and ADR messages */
     if (!banner(state, config))
+    {
+        deinit_protocol(state, config, 1);
         return -1;
+    }
 
     /* refuse if server limit reached */
     if (!to && n_servers > config->max_servers)
     {
         Log(1, "too many servers");
         msg_send2(state, M_BSY, "Too many servers", 0);
-
+        deinit_protocol(state, config, 1);
         return -1;
     }
 

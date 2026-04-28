@@ -275,7 +275,7 @@ static void evloop_cleanup(BINKD_CONFIG *config, int config_locked)
     {
         for (i = 0; i < max_sessions; i++)
         {
-            if (sessions[i].phase == SESS_RUNNING)
+            if (sessions[i].phase == SESS_RUNNING && sessions[i].state.ibuf != NULL)
             {
                 amiga_proto_close(&sessions[i].state, config, 0);
 
@@ -288,6 +288,7 @@ static void evloop_cleanup(BINKD_CONFIG *config, int config_locked)
             {
                 n_clients--;
             }
+
             sess_free(i);
         }
 
@@ -382,7 +383,9 @@ void amiga_evloop_run(BINKD_CONFIG *config, int srv_flag, int cli_flag)
             break;
         }
 
-        Delay(1UL); /* 1 tick = 20ms @ 50Hz, prevents CPU hogging */
+        /* Only delay when there's no activity to prevent CPU hogging */
+        if (sockfd_used == 0 && n_clients == 0)
+            Delay(1); /* 1 tick = 20ms @ 50Hz */
 
         /* Handle select errors */
         if (n < 0)

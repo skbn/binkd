@@ -13,7 +13,7 @@ CFLAGS=$(DEFINES) -Wall -funsigned-char -Wno-char-subscripts
 LFLAGS=-Los2
 LIBS=-lsocket -lresolv
 NTLM_SRC=ntlm/des_enc.c ntlm/helpers.c ntlm/ecb_enc.c ntlm/md4_dgst.c ntlm/set_key.c
-SRCS=binkd.c readcfg.c tools.c ftnaddr.c ftnq.c client.c server.c protocol.c bsy.c inbound.c breaksig.c branch.c os2/gettid.c os2/sem.c ftndom.c ftnnode.c os2/getfree.c srif.c pmatch.c readflo.c prothlp.c iptools.c rfc2553.c run.c binlog.c exitproc.c getw.c xalloc.c setpttl.c https.c md5b.c crypt.c srv_gai.c os2/ns_parse.c bsycleanup.c ${NTLM_SRC}
+SRCS=binkd.c readcfg.c tools.c ftnaddr.c ftnq.c client.c server.c protocol.c bsy.c inbound.c breaksig.c branch.c os2/gettid.c os2/sem.c ftndom.c ftnnode.c os2/getfree.c srif.c pmatch.c readflo.c prothlp.c iptools.c rfc2553.c run.c binlog.c exitproc.c getw.c xalloc.c setpttl.c https.c md5b.c crypt.c srv_gai.c os2/ns_parse.c ${NTLM_SRC}
 TARGET=binkd2emx
 
 #PERLDIR=../perl5.00553/os2
@@ -122,33 +122,7 @@ OBJS=${SRCS:.c=.o}
 
 TARGET:=$(TARGET).exe
 
-all: $(TARGET) utils
-
-TOOL_CFLAGS = $(CFLAGS) -I. -I misc
-
-utils: decompress process_tic freq srifreq nodelist
-
-decompress: misc/decompress.c
-	@echo Compiling decompress...
-	@$(CC) $(TOOL_CFLAGS) -o decompress.exe misc/decompress.c misc/portable.c os2/dirent.c
-
-process_tic: misc/process_tic.c
-	@echo Compiling process_tic...
-	@$(CC) $(TOOL_CFLAGS) -o process_tic.exe misc/process_tic.c misc/portable.c os2/dirent.c
-
-freq: misc/freq.c
-	@echo Compiling freq...
-	@$(CC) $(TOOL_CFLAGS) -o freq.exe misc/freq.c misc/portable.c
-
-srifreq: misc/srifreq.c
-	@echo Compiling srifreq...
-	@$(CC) $(TOOL_CFLAGS) -o srifreq.exe misc/srifreq.c misc/portable.c os2/dirent.c
-
-nodelist: misc/nodelist.c
-	@echo Compiling nodelist...
-	@$(CC) $(TOOL_CFLAGS) -o nodelist.exe misc/nodelist.c misc/portable.c
-
-.PHONY: utils decompress process_tic freq srifreq nodelist
+all: $(TARGET)
 
 .c.o:
 	@echo Compiling $*.c...

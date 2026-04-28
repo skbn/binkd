@@ -11,7 +11,8 @@ ALL_SRCS = \
   amiga/rename.c amiga/getfree.c amiga/bsdsock.c amiga/dirent.c \
   amiga/utime.c amiga/rfc2553_amiga.c amiga/sem.c amiga/evloop.c \
   amiga/sock.c amiga/session.c amiga/proto_amiga.c bsycleanup.c \
-  misc/decompress.c misc/freq.c misc/process_tic.c misc/srifreq.c misc/nodelist.c
+  misc/portable.c misc/decompress.c misc/freq.c misc/process_tic.c \
+  misc/srifreq.c misc/nodelist.c
 
 INCLUDES = -I. -Iamiga
 

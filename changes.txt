@@ -25,6 +25,9 @@ server.c:
 ftnq.c:
 - Fixed try file deletion: only delete if file exists (prevents error on missing .try files)
 
+misc/process_tic.c:
+- Fixed validation: newfiles is_directory instead of is_regular_file
+
 --- New features ---
 
 Session time in "done" line:
@@ -189,9 +192,20 @@ mkfls/amiga/Makefile.bebbo:
 
 mkfls/amiga/Makefile.analyze.bebbo:
 - New: Static analysis Makefile for bebbo gcc
+- Added misc/portable.c to ALL_SRCS
 
 mkfls/unix/Makefile.analyze.unix:
-- New: Static analysis Makefile for Unix/GCC
+- Added misc/portable.c and misc tools to UNIX_SRCS
+- Added -Imisc to INCLUDES
+- Added UNIX_DEFINES with proper Unix-specific defines
+- Updated cppcheck, clang-tidy and quick to use UNIX_DEFINES
+
+mkfls/unix/Makefile.in:
+- Added binkd to clean target
+
+mkfls/nt95-mingw/Makefile, mkfls/nt95-msvc/Makefile, mkfls/os2-emx/Makefile:
+- Restored to pgul versions (bsycleanup.c and misc tools removed)
+- Reason: compiler tools not yet updated in my VMs for proper testing
 
 --- Documentation ---
 
@@ -239,6 +253,13 @@ amiga/proto_amiga.c:
   files_sent > 0) and nothing is pending, even if local_EOB is not set (peer disconnected
   during multi-batch or while deferring M_EOB - data is already safe)
 - Removed debug messages in evloop proto_amiga functions
+- Fixed memory leak: added deinit_protocol(state, config, 1) when banner() fails
+- Fixed memory leak: added deinit_protocol(state, config, 1) when server limit reached
+
+amiga/evloop.c:
+- Fixed crash on exit: check state.ibuf != NULL before calling amiga_proto_close()
+  (prevents crash when binkd_exit activates during session with freed STATE)
+- Fixed Delay(1) bottleneck: only delay when no activity (sockfd_used == 0 && n_clients == 0)
 
 --- New Amiga-specific files (.h) ---
 

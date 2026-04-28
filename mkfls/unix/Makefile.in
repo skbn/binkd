@@ -92,7 +92,7 @@ install: compile .version
 clean:
 	rm -f *.[bo] unix/*.[bo] ntlm/*.[bo] *.BAK *.core *.obj *.err
 	rm -f *~ core config.cache config.log config.status
-	rm -f decompress process_tic freq srifreq nodelist
+	rm -f binkd decompress process_tic freq srifreq nodelist
 
 cleanall: clean
 	rm -f $(APPL) Makefile Makefile.dep Makefile.in

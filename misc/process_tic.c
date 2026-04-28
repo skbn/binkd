@@ -484,9 +484,9 @@ static int parse_config(const char *conffile)
 
     if (config_lookup(cache, "newfiles", val, sizeof(val)))
     {
-        if (val[0] && !is_regular_file(val))
+        if (val[0] && !is_directory(val))
         {
-            fprintf(stderr, "process_tic: newfiles is not a regular file: %s\n", val);
+            fprintf(stderr, "process_tic: newfiles is not a directory: %s\n", val);
             config_cache_free(cache);
             return 0;
         }
