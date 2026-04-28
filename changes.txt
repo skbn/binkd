@@ -306,6 +306,7 @@ amiga/bsdsock.h:
 --- Modified .c files (Amiga-specific changes, all under #ifdef AMIGA) ---
 
 binkd.c:
+- Added __stack = 0xFFFF (64KB stack) for Amiga to prevent stack overflow
 - Added #include "bsycleanup.h" (unconditional)
 - Added cleanup_old_bsy() call at startup (unconditional)
 - Added #if defined(HAVE_THREADS) || defined(AMIGA) semaphore declarations (hostsem, resolvsem, lsem, blsem, varsem, config_sem, eothread, wakecmgr)

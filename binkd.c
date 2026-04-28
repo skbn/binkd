@@ -11,6 +11,10 @@
  *  (at your option) any later version. See COPYING.
  */
 
+#ifdef AMIGA
+unsigned long __stack = 0xFFFF;
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
