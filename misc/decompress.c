@@ -10,6 +10,10 @@
 #include "portable.h" /* Canonical portable layer */
 #include <ctype.h>
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #define MAX_CMD 1100
 
 /* Archive format codes detected by magic bytes */

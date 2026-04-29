@@ -171,6 +171,34 @@ misc/portable.h:
 - Portable declarations and platform-specific includes (POSIX, Win32, OS/2, DOS, AmigaOS)
 - Added is_safe_filename() declaration
 
+--- Windows MinGW cross-compilation fixes (Linux to Windows) ---
+
+sem.h:
+- Added WIN32/OS2 function declarations: _InitEventSem, _PostSem, _WaitSem, _CleanEventSem
+- Fixed implicit declaration errors in Windows builds
+
+run.c:
+- Moved #include "nt/w32tools.h" after sys.h and inside #ifdef WIN32
+- Fixed unknown types (HWND, HICON) by ensuring windows.h is included before w32tools.h
+
+misc/decompress.c:
+- Added #include <windows.h> for DeleteFileA function declaration
+
+misc/portable.c:
+- Fixed Windows mkdir: use mkdir(p) for WIN32 (single argument, no mode)
+
+--- Makefile updates ---
+
+Makefile.crossmingw32 (new file):
+- Cross-compilation from Linux to Windows 64-bit using MinGW
+
+mkfls/nt95-mingw/Makefile:
+- OUTDIR: bin (no suffix modifiers)
+- Removed OUTDIR:=$(OUTDIR)-xxx modifiers
+- Misc tools: compile portable.c directly (no portable.o intermediate)
+
+--- Documentation ---
+
 doc/decompress.txt:
 - Usage documentation for decompress utility
 

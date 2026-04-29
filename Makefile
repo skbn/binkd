@@ -19,26 +19,26 @@
 
 WINDRES?=windres
 
-OUTDIR=bin
+OUTDIR=bin/mingw32
 BINKDTYPE=mingw32
 
 CC?=gcc
 CFLAGS+= -mno-cygwin -mthreads -pipe -funsigned-char \
          -Wall -Wno-char-subscripts -Wno-comment
 
-CDEFS?=  -DHAVE_THREADS -DHAVE_UNISTD -DHAVE_INTTYPES_H -DHAVE_INTMAX_T \
+CDEFS+=  -DHAVE_THREADS -DHAVE_UNISTD -DHAVE_INTTYPES_H -DHAVE_INTMAX_T \
          -DWIN32 -DHAVE_IO_H -DHAVE_DOS_H -DHAVE_STDARG_H               \
          -DHTTPS -DNTLM -DHAVE_SNPRINTF -DHAVE_VSNPRINTF \
-         -DAMIGADOS_4D_OUTBOUND -DHASATTRIBUTE -DNONAMELESSUNION \
-         -DPROTOTYPES
+         -DAMIGADOS_4D_OUTBOUND -DHASATTRIBUTE -DNONAMELESSUNION
+
 
 SRCS= binkd.c readcfg.c tools.c ftnaddr.c ftnq.c client.c server.c protocol.c \
       bsy.c inbound.c branch.c ftndom.c ftnnode.c srif.c pmatch.c readflo.c   \
       prothlp.c iptools.c rfc2553.c run.c binlog.c exitproc.c getw.c xalloc.c \
-      setpttl.c https.c md5b.c crypt.c getopt.c bsycleanup.c                 \
-      nt/breaksig.c nt/getfree.c nt/sem.c nt/TCPErr.c nt/WSock.c nt/w32tools.c \
-      nt/tray.c snprintf.c ntlm/ecb_enc.c ntlm/md4_dgst.c ntlm/set_key.c        \
-      ntlm/des_enc.c ntlm/helpers.c
+      setpttl.c https.c md5b.c crypt.c getopt.c nt/breaksig.c nt/getfree.c    \
+      nt/sem.c nt/TCPErr.c nt/WSock.c nt/w32tools.c nt/tray.c snprintf.c      \
+      ntlm/ecb_enc.c ntlm/md4_dgst.c ntlm/set_key.c ntlm/des_enc.c            \
+      ntlm/helpers.c
 
 RES=  nt/binkdres.rc
 
@@ -52,6 +52,7 @@ SRCS+= nt/win9x.c
 CDEFS+= -DBINKD9X
 LFLAGS+= -Wl,--subsystem,windows
 BINKDNAME=binkd9x-mingw
+OUTDIR:=$(OUTDIR)-binkd9x
 BINKDTYPE:=$(BINKDTYPE), binkd9x
 LIBS+=   -lwsock32
 else
@@ -60,10 +61,12 @@ CDEFS+= -DIPV6
 LIBS+=   -lws2_32
 SRCS+= nt/service.c
 BINKDNAME=binkd-mingw-ipv6
+OUTDIR:=$(OUTDIR)-binkd-ipv6
 else
 LIBS+=   -lwsock32
 SRCS+= nt/service.c
 BINKDNAME=binkd-mingw
+OUTDIR:=$(OUTDIR)-binkd
 endif
 ifdef FTS5004
 CDEFS+= -DWITH_FTS5004
@@ -78,6 +81,7 @@ ifdef DEBUG
 CFLAGS+= -g
 CDEFS+= -DDEBUG -D_DEBUG
 BINKDNAME:=$(BINKDNAME)-debug
+OUTDIR:=$(OUTDIR)-debug
 BINKDTYPE:=$(BINKDTYPE), debug
 else
 CFLAGS+= -s -O2
@@ -88,6 +92,7 @@ endif
 ifdef DEBUGCHILD
 CDEFS+= -DDEBUGCHILD
 BINKDNAME:=$(BINKDNAME)-debugchild
+OUTDIR:=$(OUTDIR)-debugchild
 BINKDTYPE:=$(BINKDTYPE), debugchild
 endif
 # debugchild, nofork ----------------------------------------------------------
@@ -132,6 +137,7 @@ ifdef PERLDL
 CDEFS+= -DPERLDL
 CFLAGS+= -fno-strict-aliasing
 BINKDNAME:=$(BINKDNAME)-perldl
+OUTDIR:=$(OUTDIR)-perldl
 BINKDTYPE:=$(BINKDTYPE), perldl
 else
 
@@ -142,6 +148,7 @@ endif
 L_DIRS+= -L"$(PERL_INCL)"
 LIBS+= -l$(PERL_LIB)
 BINKDNAME:=$(BINKDNAME)-perl
+OUTDIR:=$(OUTDIR)-perl
 BINKDTYPE:=$(BINKDTYPE), perl
 endif
 endif
@@ -163,9 +170,11 @@ ZLIB_LIB=z
 endif
 LIBS+= -l"$(ZLIB_LIB)"
 BINKDNAME:=$(BINKDNAME)-zlib
+OUTDIR:=$(OUTDIR)-zlib
 BINKDTYPE:=$(BINKDTYPE), zlib
 else
 BINKDNAME:=$(BINKDNAME)-zlibdl
+OUTDIR:=$(OUTDIR)-zlibdl
 BINKDTYPE:=$(BINKDTYPE), zlibdl
 endif
 endif
@@ -187,9 +196,11 @@ BZLIB2_LIB=bz2
 endif
 LIBS+= -l"$(BZLIB2_LIB)"
 BINKDNAME:=$(BINKDNAME)-bzlib2
+OUTDIR:=$(OUTDIR)-bzlib2
 BINKDTYPE:=$(BINKDTYPE), bzlib2
 else
 BINKDNAME:=$(BINKDNAME)-bzlib2dl
+OUTDIR:=$(OUTDIR)-bzlib2dl
 BINKDTYPE:=$(BINKDTYPE), bzlib2dl
 endif
 endif
@@ -210,9 +221,9 @@ BINKDEXE = $(BINKDNAME).exe
 OBJS=$(addprefix $(OBJDIR)/,$(patsubst %.c,%.o, $(SRCS)))
 RESOBJS=$(addprefix $(OBJDIR)/, $(patsubst %.rc,%.o, $(RES)))
 
-.PHONY: all printinfo install html clean distclean makedirs misc misc-clean
+.PHONY: all printinfo install html clean distclean makedirs
 
-all: printinfo makedirs $(OUTDIR)/$(BINKDEXE) misc
+all: printinfo makedirs $(OUTDIR)/$(BINKDEXE)
 
 printinfo:
 	@echo "-----------------------------------------------------------"
@@ -275,7 +286,7 @@ CLEANEXT:= *.o *.d
 
 clean:
 	@echo Cleanup...
-	-@rm -rf bin
+	-@rm -f $(foreach dir,$(MAKEDIRSONLY),$(foreach ext,$(CLEANEXT),$(dir)/$(ext)))
 
 distclean:
 	@echo Full cleanup...
@@ -292,55 +303,3 @@ endif
 
 # Dependencies for resourses
 $(RESOBJS): Config.h confopt.h
-
-# =============================================================================
-# Misc tools (decompress, freq, nodelist, process_tic, srifreq)
-# =============================================================================
-
-MISC_DIR = misc
-MISC_OUTDIR = bin/misc
-
-MISC_TOOLS = decompress.exe freq.exe nodelist.exe process_tic.exe srifreq.exe
-
-# Misc tools target
-misc: $(MISC_OUTDIR) $(addprefix $(MISC_OUTDIR)/,$(MISC_TOOLS))
-	@echo "Misc tools built in $(MISC_OUTDIR)"
-
-# decompress
-$(MISC_OUTDIR)/decompress.exe: $(MISC_DIR)/decompress.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
-	@echo Compiling decompress...
-	@mkdir -p $(MISC_OUTDIR)
-	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
-
-# freq
-$(MISC_OUTDIR)/freq.exe: $(MISC_DIR)/freq.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
-	@echo Compiling freq...
-	@mkdir -p $(MISC_OUTDIR)
-	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
-
-# nodelist
-$(MISC_OUTDIR)/nodelist.exe: $(MISC_DIR)/nodelist.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
-	@echo Compiling nodelist...
-	@mkdir -p $(MISC_OUTDIR)
-	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
-
-# process_tic
-$(MISC_OUTDIR)/process_tic.exe: $(MISC_DIR)/process_tic.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
-	@echo Compiling process_tic...
-	@mkdir -p $(MISC_OUTDIR)
-	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
-
-# srifreq
-$(MISC_OUTDIR)/srifreq.exe: $(MISC_DIR)/srifreq.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
-	@echo Compiling srifreq...
-	@mkdir -p $(MISC_OUTDIR)
-	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
-
-# Misc output directory
-$(MISC_OUTDIR):
-	@mkdir -p $(MISC_OUTDIR)
-
-# Clean misc tools
-misc-clean:
-	@echo Cleaning misc tools...
-	-@rm -f $(addprefix $(MISC_OUTDIR)/,$(MISC_TOOLS))

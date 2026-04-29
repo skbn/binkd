@@ -1,6 +1,6 @@
 # $Id$
 #
-
+# Cross-compilation from Linux to Windows using MinGW
 # Usage: make [DEBUG=1] [BINKD9X=1] [PERL=1] [PERLDL=1]
 #             [ZLIB=1] [BZLIB2=1] [ZLIBDL=1] [DEBUGCHILD=1]
 #             [IPV6=1] [FTS5004=1] [BW_LIM=1] [AF_FORCE=1]
@@ -17,14 +17,14 @@
 
 # =============================================================================
 
-WINDRES?=windres
+WINDRES=x86_64-w64-mingw32-windres
 
 OUTDIR=bin
 BINKDTYPE=mingw32
 
-CC?=gcc
-CFLAGS+= -mno-cygwin -mthreads -pipe -funsigned-char \
-         -Wall -Wno-char-subscripts -Wno-comment
+CC=x86_64-w64-mingw32-gcc
+CFLAGS= -m64 -pipe -Wall -O2
+LFLAGS= -m64
 
 CDEFS?=  -DHAVE_THREADS -DHAVE_UNISTD -DHAVE_INTTYPES_H -DHAVE_INTMAX_T \
          -DWIN32 -DHAVE_IO_H -DHAVE_DOS_H -DHAVE_STDARG_H               \
@@ -275,6 +275,7 @@ CLEANEXT:= *.o *.d
 
 clean:
 	@echo Cleanup...
+	-@rm -f $(foreach dir,$(MAKEDIRSONLY),$(foreach ext,$(CLEANEXT),$(dir)/$(ext)))
 	-@rm -rf bin
 
 distclean:

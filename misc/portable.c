@@ -342,6 +342,8 @@ int port_mkdir_one(const char *p)
     }
 
     return -1;
+#elif WIN32
+	return mkdir(p);
 #else
     return mkdir(p, 0755);
 #endif
