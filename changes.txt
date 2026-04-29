@@ -27,6 +27,29 @@ ftnq.c:
 
 misc/process_tic.c:
 - Fixed validation: newfiles is_directory instead of is_regular_file
+- Fixed validation: logfile/filelist/ticlog now accept if not exist yet (created on first write)
+  Only reject if exists and is not regular file
+
+misc/freq.c:
+- Fixed orphaned .req entries: remove .req if validation fails after writing some files
+- Fixed parse_time heuristic: removed arbitrary threshold, now treats values with suffix (s/m/h/d) as relative,
+  plain numbers as absolute Unix timestamp (prevents 1970-1999 timestamps being treated as relative)
+- Fixed negative time values: reject parsed < 0 (prevents -7d being treated as future time)
+- Fixed invalid suffix: reject parsed == 0 when suffix present (prevents 7x being treated as "now")
+
+misc/decompress.c:
+- Fixed infinite retry loop: delete bundle even if decompressor fails (prevents re-processing corrupt files)
+- Fixed outdir creation: now creates outdir if it doesn't exist using ensure_dir()
+
+misc/nodelist.c:
+- Fixed invalid AKAs in pointlist: skip Point entries if boss/net context is invalid (avoids 0:0/0.x)
+- Fixed invalid AKAs in regular nodelist: skip Node entries if zone context is invalid (avoids 0:net/node)
+
+misc/process_tic.c:
+- Fixed missing pubdir copy: return without moving file if copy_file fails (prevents loss of public copy)
+
+misc/srifreq.c:
+- Fixed alias path with leading spaces: trim whitespace after sscanf (prevents invalid paths)
 
 --- New features ---
 
@@ -115,6 +138,10 @@ misc/process_tic.c:
 - Added validation: inbound must be a directory
 - Added validation: logfile, filelist, newfiles, ticlog must be regular files
 - Added validation: .tic files must be regular files
+- Refactor: merged write_log()+write_ticlog() into single write_ticentry() (were 100% identical bodies)
+- Refactor: merged parse_file_field()/parse_area_field()/parse_origin_field()/parse_from_field() into single parse_keyword_field(keyword,...)
+- Refactor: removed local my_toupper()/my_strnicmp() helpers; replaced with toupper() from <ctype.h>
+- Refactor: is_tic_file() rewritten using toupper() inline char comparison
 
 misc/srifreq.c:
 - Reimplementation in C of pgul's misc/srifreq shell script (password protection, aliases, wildcards, rate limiting)
@@ -127,6 +154,7 @@ misc/srifreq.c:
 - Added validation: pubdir must be a directory
 - Added validation: logfile, aliases, trackfile must be regular files
 - Added validation: private paths must be directories
+- Refactor: extracted passwd_match() helper; replaced 3 duplicated case-insensitive password comparison blocks
 
 misc/portable.c:
 - Shared implementations: string utilities, file operations, path utilities

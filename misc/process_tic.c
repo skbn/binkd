@@ -23,80 +23,23 @@ static struct
     int copypublic;
 } cfg;
 
-static int my_toupper(int c)
+static int parse_keyword_field(char *line, const char *keyword, char *out, int outsize)
 {
-    if (c >= 'a' && c <= 'z')
-        return c - 'a' + 'A';
+    char *p;
+    char *end;
+    int len;
+    int klen = (int)strlen(keyword);
+    int i;
 
-    return c;
-}
+    p = skip_ws(line);
 
-static int my_strnicmp(const char *a, const char *b, int n)
-{
-    int i, ca, cb;
-    for (i = 0; i < n; i++)
+    for (i = 0; i < klen; i++)
     {
-        ca = my_toupper((unsigned char)a[i]);
-        cb = my_toupper((unsigned char)b[i]);
-
-        if (ca != cb)
-            return ca - cb;
-
-        if (ca == 0)
+        if (toupper((unsigned char)p[i]) != toupper((unsigned char)keyword[i]))
             return 0;
     }
 
-    return 0;
-}
-
-static int parse_file_field(char *line, char *out, int outsize)
-{
-    char *p;
-    char *end;
-    int len;
-
-    p = skip_ws(line);
-
-    if (my_strnicmp(p, "File", 4) != 0)
-        return 0;
-
-    p += 4;
-
-    if (*p != ' ' && *p != '\t')
-        return 0;
-
-    p = skip_ws(p);
-    trim_nl(p);
-    end = p;
-
-    while (*end && *end != ' ' && *end != '\t')
-        end++;
-
-    *end = '\0';
-
-    len = (int)strlen(p);
-
-    if (len <= 0 || len >= outsize)
-        return 0;
-
-    strncpy(out, p, outsize - 1);
-    out[outsize - 1] = '\0';
-
-    return 1;
-}
-
-static int parse_area_field(char *line, char *out, int outsize)
-{
-    char *p;
-    char *end;
-    int len;
-
-    p = skip_ws(line);
-
-    if (my_strnicmp(p, "Area", 4) != 0)
-        return 0;
-
-    p += 4;
+    p += klen;
 
     if (*p != ' ' && *p != '\t')
         return 0;
@@ -120,74 +63,39 @@ static int parse_area_field(char *line, char *out, int outsize)
     return 1;
 }
 
-static int parse_origin_field(char *line, char *out, int outsize)
+static void write_ticentry(const char *logfile, const char *file_name, const char *area_name, const char *origin_name, const char *from_name, const char *src_path, const char *dst_path)
 {
-    char *p;
-    char *end;
-    int len;
+    FILE *f;
+    time_t t;
+    struct tm tm;
+    char timestamp[64];
 
-    p = skip_ws(line);
+    if (!logfile || !logfile[0])
+        return;
 
-    if (my_strnicmp(p, "Origin", 6) != 0)
-        return 0;
+    f = fopen(logfile, "a");
 
-    p += 6;
+    if (!f)
+        return;
 
-    if (*p != ' ' && *p != '\t')
-        return 0;
+    t = time(NULL);
+    safe_localtime(&t, &tm);
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &tm);
 
-    p = skip_ws(p);
-    trim_nl(p);
-    end = p;
+    fprintf(f, "[%s] File: %s\n", timestamp, file_name);
+    fprintf(f, "  Area: %s\n", area_name);
 
-    while (*end && *end != ' ' && *end != '\t')
-        end++;
+    if (origin_name[0])
+        fprintf(f, "  Origin: %s\n", origin_name);
 
-    *end = '\0';
-    len = (int)strlen(p);
+    if (from_name[0])
+        fprintf(f, "  From: %s\n", from_name);
 
-    if (len <= 0 || len >= outsize)
-        return 0;
+    fprintf(f, "  Src: %s\n", src_path);
+    fprintf(f, "  To: %s\n", dst_path);
+    fprintf(f, "\n");
 
-    strncpy(out, p, outsize - 1);
-    out[outsize - 1] = '\0';
-
-    return 1;
-}
-
-static int parse_from_field(char *line, char *out, int outsize)
-{
-    char *p;
-    char *end;
-    int len;
-
-    p = skip_ws(line);
-
-    if (my_strnicmp(p, "From", 4) != 0)
-        return 0;
-
-    p += 4;
-
-    if (*p != ' ' && *p != '\t')
-        return 0;
-
-    p = skip_ws(p);
-    trim_nl(p);
-    end = p;
-
-    while (*end && *end != ' ' && *end != '\t')
-        end++;
-
-    *end = '\0';
-    len = (int)strlen(p);
-
-    if (len <= 0 || len >= outsize)
-        return 0;
-
-    strncpy(out, p, outsize - 1);
-    out[outsize - 1] = '\0';
-
-    return 1;
+    fclose(f);
 }
 
 static void append_filelist(const char *listpath, const char *file_name, long filesize, const char *dst_path)
@@ -243,73 +151,6 @@ static void append_newfiles(const char *newprefix, const char *file_name, long f
     fclose(f);
 }
 
-static void write_ticlog(const char *ticlog, const char *file_name, const char *area_name, const char *origin_name, const char *from_name, const char *src_path, const char *dst_path)
-{
-    FILE *f;
-    time_t t;
-    struct tm tm;
-    char timestamp[64];
-
-    if (!ticlog || !ticlog[0])
-        return;
-
-    f = fopen(ticlog, "a");
-    if (!f)
-        return;
-
-    t = time(NULL);
-    safe_localtime(&t, &tm);
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &tm);
-
-    fprintf(f, "[%s] File: %s\n", timestamp, file_name);
-    fprintf(f, "  Area: %s\n", area_name);
-
-    if (origin_name[0])
-        fprintf(f, "  Origin: %s\n", origin_name);
-
-    if (from_name[0])
-        fprintf(f, "  From: %s\n", from_name);
-
-    fprintf(f, "  Src: %s\n", src_path);
-    fprintf(f, "  To: %s\n", dst_path);
-    fprintf(f, "\n");
-
-    fclose(f);
-}
-
-static void write_log(const char *logfile, const char *file_name, const char *area_name, const char *origin_name, const char *from_name, const char *src_path, const char *dst_path)
-{
-    FILE *f;
-    time_t t;
-    struct tm tm;
-    char timestamp[64];
-
-    if (!logfile || !logfile[0])
-        return;
-
-    f = fopen(logfile, "a");
-    if (!f)
-        return;
-
-    t = time(NULL);
-    safe_localtime(&t, &tm);
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &tm);
-
-    fprintf(f, "[%s] File: %s\n", timestamp, file_name);
-    fprintf(f, "  Area: %s\n", area_name);
-
-    if (origin_name[0])
-        fprintf(f, "  Origin: %s\n", origin_name);
-
-    if (from_name[0])
-        fprintf(f, "  From: %s\n", from_name);
-
-    fprintf(f, "  Src: %s\n", src_path);
-    fprintf(f, "  To: %s\n", dst_path);
-    fprintf(f, "\n");
-    fclose(f);
-}
-
 static void process_one_tic(const char *ticpath, const char *inbound, const char *filebox, int copypublic, const char *pubdir, const char *logfile, const char *filelist, const char *newfiles, const char *ticlog)
 {
     FILE *f;
@@ -336,16 +177,16 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
     while (fgets(line, sizeof(line), f))
     {
         if (!file_name[0])
-            parse_file_field(line, file_name, sizeof(file_name));
+            parse_keyword_field(line, "File", file_name, sizeof(file_name));
 
         if (!area_name[0])
-            parse_area_field(line, area_name, sizeof(area_name));
+            parse_keyword_field(line, "Area", area_name, sizeof(area_name));
 
         if (!origin_name[0])
-            parse_origin_field(line, origin_name, sizeof(origin_name));
+            parse_keyword_field(line, "Origin", origin_name, sizeof(origin_name));
 
         if (!from_name[0])
-            parse_from_field(line, from_name, sizeof(from_name));
+            parse_keyword_field(line, "From", from_name, sizeof(from_name));
     }
 
     fclose(f);
@@ -375,7 +216,10 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
         if (ensure_dir(pubdir))
         {
             if (!copy_file(src_path, pub_dst))
+            {
                 fprintf(stderr, "process_tic: failed to copy to pubdir: %s -> %s\n", src_path, pub_dst);
+                return;  /* Do not move file if copy to pubdir failed */
+            }
         }
     }
 
@@ -387,8 +231,9 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
         return;
     }
 
-    write_log(logfile, file_name, area_name, origin_name, from_name, src_path, dst_path);
-    write_ticlog(ticlog, file_name, area_name, origin_name, from_name, src_path, dst_path);
+    write_ticentry(logfile, file_name, area_name, origin_name, from_name, src_path, dst_path);
+    write_ticentry(ticlog, file_name, area_name, origin_name, from_name, src_path, dst_path);
+
     append_filelist(filelist, file_name, fsize, dst_path);
     append_newfiles(newfiles, file_name, fsize, dst_path);
 
@@ -402,7 +247,7 @@ static int is_tic_file(const char *name)
     if (len < 5)
         return 0;
 
-    return (my_strnicmp(name + len - 4, ".tic", 4) == 0);
+    return (name[len - 4] == '.' && toupper((unsigned char)name[len - 3]) == 'T' && toupper((unsigned char)name[len - 2]) == 'I' && toupper((unsigned char)name[len - 1]) == 'C');
 }
 
 /* Parse configuration file */
@@ -414,6 +259,7 @@ static int parse_config(const char *conffile)
     memset(&cfg, 0, sizeof(cfg));
 
     cache = config_load(conffile);
+
     if (!cache)
     {
         fprintf(stderr, "process_tic: cannot open config file: %s\n", conffile);
@@ -460,9 +306,9 @@ static int parse_config(const char *conffile)
 
     if (config_lookup(cache, "logfile", val, sizeof(val)))
     {
-        if (val[0] && !is_regular_file(val) && strcmp(val, "-") != 0)
+        if (val[0] && val[0] != '-' && strcmp(val, "-") != 0 && path_exists(val) && !is_regular_file(val))
         {
-            fprintf(stderr, "process_tic: logfile is not a regular file: %s\n", val);
+            fprintf(stderr, "process_tic: logfile exists but is not a regular file: %s\n", val);
             config_cache_free(cache);
             return 0;
         }
@@ -472,9 +318,9 @@ static int parse_config(const char *conffile)
 
     if (config_lookup(cache, "filelist", val, sizeof(val)))
     {
-        if (val[0] && !is_regular_file(val))
+        if (val[0] && val[0] != '-' && path_exists(val) && !is_regular_file(val))
         {
-            fprintf(stderr, "process_tic: filelist is not a regular file: %s\n", val);
+            fprintf(stderr, "process_tic: filelist exists but is not a regular file: %s\n", val);
             config_cache_free(cache);
             return 0;
         }
@@ -496,9 +342,9 @@ static int parse_config(const char *conffile)
 
     if (config_lookup(cache, "ticlog", val, sizeof(val)))
     {
-        if (val[0] && !is_regular_file(val) && strcmp(val, "-") != 0)
+        if (val[0] && val[0] != '-' && strcmp(val, "-") != 0 && path_exists(val) && !is_regular_file(val))
         {
-            fprintf(stderr, "process_tic: ticlog is not a regular file: %s\n", val);
+            fprintf(stderr, "process_tic: ticlog exists but is not a regular file: %s\n", val);
             config_cache_free(cache);
             return 0;
         }
@@ -574,7 +420,6 @@ int main(int argc, char *argv[])
     if (!inbound[0] || !filebox[0])
     {
         fprintf(stderr, "Usage: process_tic --conf <config-file> [*.tic]\n");
-
         return 1;
     }
 

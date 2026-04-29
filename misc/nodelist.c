@@ -229,6 +229,10 @@ int main(int argc, char *argv[])
                 int pnet = boss_net > 0 ? boss_net : (cur_net > 0 ? cur_net : 0);
                 int pboss = boss_node > 0 ? boss_node : (cur_node > 0 ? cur_node : 0);
 
+                /* Skip if boss/net context is invalid (avoids 0:0/0.x AKAs) */
+                if (pnet == 0 || pboss == 0)
+                    continue;
+
                 /* Check for IBN/INA flags (optional, defaults if not present) */
                 if (!find_flag(fields, nf, flags_start, "IBN", ibn_port, (int)sizeof(ibn_port)))
                     ibn_port[0] = '\0';
@@ -301,6 +305,10 @@ int main(int argc, char *argv[])
             continue;
 
         port = (ibn_port[0] && atoi(ibn_port) > 0) ? atoi(ibn_port) : 24554;
+
+        /* Skip if zone context is invalid (avoids 0:net/node AKAs) */
+        if (cur_zone == 0)
+            continue;
 
         fprintf(out, "node %d:%d/%d@%s %s:%d -\n", cur_zone, cur_net, node_num, domain, ina_host, port);
 

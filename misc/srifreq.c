@@ -399,6 +399,24 @@ static int tracking_check(const char *aka, char *msg, int msglen)
     return 1; /* Within limits */
 }
 
+/* passwd_match -- Case-insensitive comparison of two password strings */
+static int passwd_match(const char *a, const char *b)
+{
+    char ua[64], ub[64];
+    int i;
+
+    safe_strncpy(ua, a, (int)sizeof(ua));
+    safe_strncpy(ub, b, (int)sizeof(ub));
+
+    for (i = 0; ua[i]; i++)
+        ua[i] = (char)toupper((unsigned char)ua[i]);
+
+    for (i = 0; ub[i]; i++)
+        ub[i] = (char)toupper((unsigned char)ub[i]);
+
+    return strcmp(ua, ub) == 0;
+}
+
 /* is_abs_path -- True if path is absolute (POSIX, Win32, AmigaDOS device:) */
 static int is_abs_path(const char *p)
 {
@@ -448,7 +466,7 @@ static void load_aliases(const char *filepath)
 
     if (!f)
     {
-        /*fprintf(stderr, "srifreq: cannot open aliases file: %s\n", filepath);*/
+        fprintf(stderr, "srifreq: cannot open aliases file: %s\n", filepath);
         return;
     }
 
@@ -479,6 +497,15 @@ static void load_aliases(const char *filepath)
 
         if (!name[0] || !path[0])
             continue;
+
+        /* Trim leading whitespace from path (sscanf may capture spaces if multiple spaces between fields) */
+        p = path;
+
+        while (*p == ' ' || *p == '\t')
+            p++;
+
+        if (p != path)
+            memmove(path, p, strlen(p) + 1);
 
         /* Grow array dynamically if needed */
         if (g_nalias >= g_alias_cap)
@@ -674,23 +701,10 @@ static int serve_one(const char *req_name, const char *found_path, const char *r
     /* Password check: !pw must match SRIF PASSWORD (case-insensitive) */
     if (req_pass[0])
     {
-        char rp[64], sp[64];
-        int i;
-
-        safe_strncpy(rp, req_pass, (int)sizeof(rp));
-        safe_strncpy(sp, srif->password, (int)sizeof(sp));
-
-        for (i = 0; rp[i]; i++)
-            rp[i] = (char)toupper((unsigned char)rp[i]);
-
-        for (i = 0; sp[i]; i++)
-            sp[i] = (char)toupper((unsigned char)sp[i]);
-
-        if (strcmp(rp, sp) != 0)
+        if (!passwd_match(req_pass, srif->password))
         {
             snprintf(logbuf, logbuf_size, "PASSWORD FAIL: %s", req_name);
             do_log(log_path, logbuf);
-
             return 0;
         }
     }
@@ -972,19 +986,7 @@ int main(int argc, char *argv[])
             /* Scan matching privdirs */
             for (pd = g_conf.privdirs; pd; pd = pd->next)
             {
-                char rp[64], pp[64];
-                int ci;
-
-                safe_strncpy(rp, req_pass, (int)sizeof(rp));
-                safe_strncpy(pp, pd->password, (int)sizeof(pp));
-
-                for (ci = 0; rp[ci]; ci++)
-                    rp[ci] = (char)toupper((unsigned char)rp[ci]);
-
-                for (ci = 0; pp[ci]; ci++)
-                    pp[ci] = (char)toupper((unsigned char)pp[ci]);
-
-                if (strcmp(rp, pp) != 0)
+                if (!passwd_match(req_pass, pd->password))
                     continue;
 
                 dp = opendir(pd->path);
@@ -1036,19 +1038,7 @@ int main(int argc, char *argv[])
 
             for (pd = g_conf.privdirs; pd && !served; pd = pd->next)
             {
-                char rp[64], pp[64];
-                int ci;
-
-                safe_strncpy(rp, req_pass, (int)sizeof(rp));
-                safe_strncpy(pp, pd->password, (int)sizeof(pp));
-
-                for (ci = 0; rp[ci]; ci++)
-                    rp[ci] = (char)toupper((unsigned char)rp[ci]);
-
-                for (ci = 0; pp[ci]; ci++)
-                    pp[ci] = (char)toupper((unsigned char)pp[ci]);
-
-                if (strcmp(rp, pp) != 0)
+                if (!passwd_match(req_pass, pd->password))
                     continue;
 
                 path_join(found_path, MAXPATHLEN, pd->path, req_name);

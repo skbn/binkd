@@ -193,8 +193,11 @@ int main(int argc, char *argv[])
 
     if (!is_directory(outdir))
     {
-        fprintf(stderr, "decompress: outdir is not a directory: %s\n", outdir);
-        return 1;
+        if (!ensure_dir(outdir))
+        {
+            fprintf(stderr, "decompress: cannot create outdir: %s\n", outdir);
+            return 1;
+        }
     }
 
     dp = opendir(inbound);
@@ -232,6 +235,11 @@ int main(int argc, char *argv[])
         {
             delete_file(path);
             ok++;
+        }
+        else
+        {
+            /* Decompressor failed, but delete file to prevent infinite retry loop */
+            delete_file(path);
         }
     }
 

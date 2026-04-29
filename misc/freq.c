@@ -132,18 +132,32 @@ int main(int argc, char *argv[])
             /* Binkds copy */
             /* Support both Unix timestamp (seconds since epoch) and relative time
              * - With suffix (7d, 1h, 30m): treated as relative time from now
-             * - Plain number: if > 1 year in seconds (31536000), treated as Unix timestamp
-             * otherwise treated as relative seconds */
+             * - Plain number: treated as absolute Unix timestamp */
             char *time_arg = argv[++argi];
             long parsed = parse_time(time_arg);
 
-            /* Heuristic: if value has no letter suffix and is > 1 year in seconds,
-             * assume it's an absolute Unix timestamp (year 2001+)
-             * Otherwise it's relative time */
-            if (parsed > 31536000L)  /* > 1 year ≈ Unix timestamps from 1971+ */
-                newer_than = parsed; /* Absolute Unix timestamp */
-            else
+            /* Validate parsed value (reject negative values) */
+            if (parsed < 0)
+            {
+                fprintf(stderr, "freq: invalid time value: %s (negative)\n", time_arg);
+                return 1;
+            }
+
+            /* Explicit: if value has suffix (s/m/h/d), treat as relative time from now
+             * Otherwise treat as absolute Unix timestamp */
+            if (strchr(time_arg, 's') || strchr(time_arg, 'm') || strchr(time_arg, 'h') || strchr(time_arg, 'd') ||                strchr(time_arg, 'S') || strchr(time_arg, 'M') || strchr(time_arg, 'H') || strchr(time_arg, 'D'))
+            {
+                /* Validate that parse_time returned a non-zero value (invalid suffix returns 0) */
+                if (parsed == 0)
+                {
+                    fprintf(stderr, "freq: invalid time value: %s (invalid suffix)\n", time_arg);
+                    return 1;
+                }
+
                 newer_than = time(NULL) - parsed; /* Relative: seconds/minutes/hours/days ago */
+            }
+            else
+                newer_than = parsed; /* Absolute Unix timestamp */
             argi++;
         }
         else
@@ -226,6 +240,7 @@ int main(int argc, char *argv[])
         {
             fprintf(stderr, "freq: invalid filename: %s\n", fname);
             fclose(f);
+            remove(req_path); /* Remove incomplete .req to avoid orphaned entries */
             return 1;
         }
 
