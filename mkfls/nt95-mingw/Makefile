@@ -1,7 +1,7 @@
 # $Id$
 #
 
-# Usage: make [DEBUG=1] [BINKD9X=1] [PERL=1] [PERLDL=1]
+# Usage: make [ARCH=win64|win32] [DEBUG=1] [BINKD9X=1] [PERL=1] [PERLDL=1]
 #             [ZLIB=1] [BZLIB2=1] [ZLIBDL=1] [DEBUGCHILD=1]
 #             [IPV6=1] [FTS5004=1] [BW_LIM=1] [AF_FORCE=1]
 #
@@ -16,6 +16,17 @@
 #BZLIB2_LIB=bz2
 
 # =============================================================================
+
+# Architecture selection (default: win64)
+ARCH?=win64
+
+ifeq ($(ARCH),win32)
+CFLAGS+= -m32
+LFLAGS+= -m32
+else
+CFLAGS+= -m64
+LFLAGS+= -m64
+endif
 
 WINDRES?=windres
 
@@ -46,12 +57,19 @@ OBJDIR= $(OUTDIR)/obj
 MAKEDIRSONLY= $(OBJDIR) $(OBJDIR)/nt $(OBJDIR)/ntlm
 MAKEDIRS= $(OUTDIR) $(MAKEDIRSONLY)
 
+# Architecture suffix for executable names
+ifeq ($(ARCH),win32)
+ARCH_SUFFIX=x32
+else
+ARCH_SUFFIX=x64
+endif
+
 # binkd9x +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ifdef BINKD9X
 SRCS+= nt/win9x.c
 CDEFS+= -DBINKD9X
 LFLAGS+= -Wl,--subsystem,windows
-BINKDNAME=binkd9x-mingw
+BINKDNAME=binkd9x-mingw-$(ARCH_SUFFIX)
 BINKDTYPE:=$(BINKDTYPE), binkd9x
 LIBS+=   -lwsock32
 else
@@ -59,11 +77,11 @@ ifdef IPV6
 CDEFS+= -DIPV6
 LIBS+=   -lws2_32
 SRCS+= nt/service.c
-BINKDNAME=binkd-mingw-ipv6
+BINKDNAME=binkd-mingw-$(ARCH_SUFFIX)-ipv6
 else
 LIBS+=   -lwsock32
 SRCS+= nt/service.c
-BINKDNAME=binkd-mingw
+BINKDNAME=binkd-mingw-$(ARCH_SUFFIX)
 endif
 ifdef FTS5004
 CDEFS+= -DWITH_FTS5004
@@ -300,38 +318,38 @@ $(RESOBJS): Config.h confopt.h
 MISC_DIR = misc
 MISC_OUTDIR = bin/misc
 
-MISC_TOOLS = decompress.exe freq.exe nodelist.exe process_tic.exe srifreq.exe
+MISC_TOOLS = decompress-$(ARCH_SUFFIX).exe freq-$(ARCH_SUFFIX).exe nodelist-$(ARCH_SUFFIX).exe process_tic-$(ARCH_SUFFIX).exe srifreq-$(ARCH_SUFFIX).exe
 
 # Misc tools target
 misc: $(MISC_OUTDIR) $(addprefix $(MISC_OUTDIR)/,$(MISC_TOOLS))
 	@echo "Misc tools built in $(MISC_OUTDIR)"
 
 # decompress
-$(MISC_OUTDIR)/decompress.exe: $(MISC_DIR)/decompress.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
+$(MISC_OUTDIR)/decompress-$(ARCH_SUFFIX).exe: $(MISC_DIR)/decompress.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
 	@echo Compiling decompress...
 	@mkdir -p $(MISC_OUTDIR)
 	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
 
 # freq
-$(MISC_OUTDIR)/freq.exe: $(MISC_DIR)/freq.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
+$(MISC_OUTDIR)/freq-$(ARCH_SUFFIX).exe: $(MISC_DIR)/freq.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
 	@echo Compiling freq...
 	@mkdir -p $(MISC_OUTDIR)
 	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
 
 # nodelist
-$(MISC_OUTDIR)/nodelist.exe: $(MISC_DIR)/nodelist.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
+$(MISC_OUTDIR)/nodelist-$(ARCH_SUFFIX).exe: $(MISC_DIR)/nodelist.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
 	@echo Compiling nodelist...
 	@mkdir -p $(MISC_OUTDIR)
 	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
 
 # process_tic
-$(MISC_OUTDIR)/process_tic.exe: $(MISC_DIR)/process_tic.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
+$(MISC_OUTDIR)/process_tic-$(ARCH_SUFFIX).exe: $(MISC_DIR)/process_tic.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
 	@echo Compiling process_tic...
 	@mkdir -p $(MISC_OUTDIR)
 	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
 
 # srifreq
-$(MISC_OUTDIR)/srifreq.exe: $(MISC_DIR)/srifreq.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
+$(MISC_OUTDIR)/srifreq-$(ARCH_SUFFIX).exe: $(MISC_DIR)/srifreq.c $(MISC_DIR)/portable.c $(MISC_DIR)/portable.h
 	@echo Compiling srifreq...
 	@mkdir -p $(MISC_OUTDIR)
 	@$(CC) $(CFLAGS) $(CDEFS) -I$(MISC_DIR) -o $@ $^ $(L_DIRS) $(LIBS)
