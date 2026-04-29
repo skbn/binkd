@@ -101,6 +101,12 @@ int _WaitSem (EVENTSEM *, int);
  */
 
 int _CleanEventSem (EVENTSEM *);
+
+#elif defined(WIN32) || defined(OS2)
+int _InitEventSem (void *);
+int _PostSem (void *);
+int _WaitSem (void *, int);
+int _CleanEventSem (void *);
 #endif
 
 #if defined(WITH_PTHREADS)

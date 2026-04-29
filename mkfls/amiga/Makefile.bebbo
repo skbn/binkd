@@ -32,6 +32,7 @@ DEFINES = \
   -DHAVE_STDARG_H            \
   -DHAVE_VSNPRINTF           \
   -DWITH_ZLIB                \
+  -DBW_LIM=1				 \
   -DOS=\"Amiga\"             \
   -I.                        \
   -Iamiga

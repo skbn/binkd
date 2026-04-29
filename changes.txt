@@ -195,7 +195,6 @@ Makefile.crossmingw32 (new file):
 mkfls/nt95-mingw/Makefile:
 - OUTDIR: bin (no suffix modifiers)
 - Removed OUTDIR:=$(OUTDIR)-xxx modifiers
-- Misc tools: compile portable.c directly (no portable.o intermediate)
 
 --- Documentation ---
 

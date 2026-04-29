@@ -25,6 +25,11 @@
 #endif
 
 #include "sys.h"
+
+#ifdef WIN32
+#include "nt/w32tools.h"
+#endif
+
 #include "run.h"
 #include "tools.h"
 #include "sem.h"
