@@ -18,8 +18,11 @@
 
 static int split_fields(char *buf, char **fields, int maxfields)
 {
-    int n = 0;
-    char *p = buf;
+    int n;
+    char *p;
+
+    n = 0;
+    p = buf;
 
     while (n < maxfields)
     {
@@ -38,13 +41,16 @@ static int split_fields(char *buf, char **fields, int maxfields)
 /* Case-insensitive flag search.  Returns 1 if found; fills val if present */
 static int find_flag(char **fields, int nfields, int start, const char *flag, char *val, int vsize)
 {
-    int flen = (int)strlen(flag);
+    int flen;
     int i;
+    int j;
+    char *f;
+
+    flen = (int)strlen(flag);
 
     for (i = start; i < nfields; i++)
     {
-        char *f = fields[i];
-        int j;
+        f = fields[i];
 
         for (j = 0; j < flen; j++)
         {
@@ -151,6 +157,10 @@ int main(int argc, char *argv[])
         int node_num;
         int port;
         int flags_start;
+        char *addr_field;
+        int parsed_zone, parsed_net, parsed_node;
+        int point_num;
+        int pzone, pnet, pboss;
 
         str_trim(buf);
 
@@ -184,7 +194,7 @@ int main(int argc, char *argv[])
             if (!strcmp(type, "Boss") || !strcmp(type, "BOSS"))
             {
                 /* Parse boss address (field 1 or 2 depending on format) */
-                char *addr_field = NULL;
+                addr_field = NULL;
                 
                 if (nf > 2 && fields[2] && (strchr(fields[2], ':') || strchr(fields[2], '/')))
                     addr_field = fields[2];
@@ -193,7 +203,9 @@ int main(int argc, char *argv[])
                 
                 if (addr_field)
                 {
-                    int parsed_zone = 0, parsed_net = 0, parsed_node = 0;
+                    parsed_zone = 0;
+                    parsed_net = 0;
+                    parsed_node = 0;
                     
                     if (strchr(addr_field, ':'))
                     {
@@ -222,12 +234,12 @@ int main(int argc, char *argv[])
             /* Point format (FTS-5002 2.2): Point,N,... */
             if (!strcmp(type, "Point") || !strcmp(type, "POINT"))
             {
-                int point_num = node_num; /* field 1 is point number in this format */
+                point_num = node_num; /* field 1 is point number in this format */
 
                 /* Use current zone/net context, or boss context if set */
-                int pzone = boss_zone > 0 ? boss_zone : (cur_zone > 0 ? cur_zone : 1);
-                int pnet = boss_net > 0 ? boss_net : (cur_net > 0 ? cur_net : 0);
-                int pboss = boss_node > 0 ? boss_node : (cur_node > 0 ? cur_node : 0);
+                pzone = boss_zone > 0 ? boss_zone : (cur_zone > 0 ? cur_zone : 1);
+                pnet = boss_net > 0 ? boss_net : (cur_net > 0 ? cur_net : 0);
+                pboss = boss_node > 0 ? boss_node : (cur_node > 0 ? cur_node : 0);
 
                 /* Skip if boss/net context is invalid (avoids 0:0/0.x AKAs) */
                 if (pnet == 0 || pboss == 0)

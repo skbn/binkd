@@ -81,11 +81,15 @@ MUTEXSEM lsem;
 MUTEXSEM blsem;
 MUTEXSEM varsem;
 MUTEXSEM config_sem;
-EVENTSEM eothread;
 EVENTSEM wakecmgr;
+#endif
+
 #ifdef OS2
 MUTEXSEM fhsem;
 #endif
+
+#ifdef HAVE_THREADS
+EVENTSEM eothread;
 #endif
 
 /*
@@ -553,7 +557,9 @@ int main (int argc, char *argv[])
   InitSem (&blsem);
   InitSem (&varsem);
   InitSem (&config_sem);
+#if defined(HAVE_THREADS)
   InitEventSem (&eothread);
+#endif
   InitEventSem (&wakecmgr);
 #ifdef OS2
   InitSem (&fhsem);

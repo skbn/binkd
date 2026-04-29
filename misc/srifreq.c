@@ -264,7 +264,9 @@ static void tracking_load(void)
     long bytes;
     long timestamp;
     NodeTrack *nt;
-    time_t now = time(NULL);
+    time_t now;
+
+    now = time(NULL);
 
     if (!g_conf.trackfile[0])
         return;
@@ -347,8 +349,11 @@ static NodeTrack *tracking_find(const char *aka)
 /* tracking_update -- Update tracking after serving a file */
 static void tracking_update(const char *aka, long filesize)
 {
-    NodeTrack *nt = tracking_find(aka);
-    time_t now = time(NULL);
+    NodeTrack *nt;
+    time_t now;
+
+    nt = tracking_find(aka);
+    now = time(NULL);
 
     if (nt)
     {
@@ -510,8 +515,11 @@ static void load_aliases(const char *filepath)
         /* Grow array dynamically if needed */
         if (g_nalias >= g_alias_cap)
         {
-            int new_cap = g_alias_cap ? g_alias_cap * 2 : 16;
-            Alias *new_arr = realloc(g_aliases, (size_t)new_cap * sizeof(Alias));
+            int new_cap;
+            Alias *new_arr;
+
+            new_cap = g_alias_cap ? g_alias_cap * 2 : 16;
+            new_arr = realloc(g_aliases, (size_t)new_cap * sizeof(Alias));
 
             if (!new_arr)
                 break;
@@ -682,6 +690,7 @@ static void do_log(const char *logpath, const char *msg)
 static int serve_one(const char *req_name, const char *found_path, const char *req_pass, long req_newer, int req_update, const SRIF *srif, FILE *rsp_f, const char *log_path, char *logbuf, int logbuf_size)
 {
     long fsize;
+    long mtime;
 
     /* Check rate limits before serving */
     if (g_conf.trackfile[0] && !tracking_check(srif->aka, logbuf, logbuf_size))
@@ -712,7 +721,7 @@ static int serve_one(const char *req_name, const char *found_path, const char *r
     /* Update request (U flag): serve only if file is newer than TRANX */
     if (req_update && srif->tranx > 0)
     {
-        long mtime = get_file_mtime(found_path);
+        mtime = get_file_mtime(found_path);
 
         if (mtime <= srif->tranx)
         {
@@ -725,7 +734,7 @@ static int serve_one(const char *req_name, const char *found_path, const char *r
     /* Timestamp check: +ts means "only if file is newer than ts" */
     if (req_newer > 0)
     {
-        long mtime = get_file_mtime(found_path);
+        mtime = get_file_mtime(found_path);
 
         if (mtime <= req_newer)
         {
@@ -864,6 +873,7 @@ int main(int argc, char *argv[])
     {
         char *p;
         const char *alias_path;
+        int i;
 
         str_trim(line);
 
@@ -899,7 +909,7 @@ int main(int argc, char *argv[])
             if (*p == '!')
             {
                 /* !password */
-                int i = 0;
+                i = 0;
                 p++;
 
                 while (*p && *p != ' ' && *p != '\t' && i < (int)sizeof(req_pass) - 1)
@@ -1034,7 +1044,9 @@ int main(int argc, char *argv[])
         {
             /* Try each private dir whose password matches */
             PrivDir *pd;
-            int served = 0;
+            int served;
+
+            served = 0;
 
             for (pd = g_conf.privdirs; pd && !served; pd = pd->next)
             {

@@ -2,6 +2,22 @@
 MULTI-PLATFORM CHANGES (all OS)
 ===========================================================================
 
+2026-04-29 - Threading Primitives Fixes + C89 Compatibility Fixes
+
+Threading primitives fixes:
+- Separated EVENTSEM eothread declarations to HAVE_THREADS only (removed || defined(AMIGA))
+- Protected PostSem(&eothread) with #ifdef HAVE_THREADS in client.c and server.c
+- EVENTSEM wakecmgr remains available for both HAVE_THREADS and AMIGA
+- MUTEXSEM (lsem, blsem, hostsem, resolvsem, varsem, config_sem) available for HAVE_THREADS and AMIGA
+
+C89 compatibility fixes for misc/tools:
+- misc/portable.c: Moved variable declarations to block beginnings (str_trim, is_directory, is_regular_file, port_mkdir_one, make_abs_path, parse_config_line, config_get, config_cache_free)
+- misc/process_tic.c: Moved variable declarations to block beginnings (parse_keyword_field, process_one_tic, is_tic_file)
+- misc/freq.c: Moved variable declarations to block beginnings (main)
+- misc/nodelist.c: Moved variable declarations to block beginnings (split_fields, find_flag, main)
+- misc/decompress.c: Moved variable declarations to block beginnings (detect_format, is_ftn_bundle, run_decompressor)
+- misc/srifreq.c: Moved variable declarations to block beginnings (tracking_load, tracking_update, load_aliases, serve_one, serve_request)
+
 --- Bug fixes ---
 
 binkd.c:
@@ -269,6 +285,16 @@ mkfls/nt95-mingw/Makefile, mkfls/nt95-msvc/Makefile, mkfls/os2-emx/Makefile:
 ===========================================================================
 AMIGA-SPECIFIC CHANGES (#ifdef AMIGA / AMIGADOS_4D_OUTBOUND)
 ===========================================================================
+
+Amiga ixemul cleanup
+
+Amiga-specific code migration:
+- Migrated server.c functionality to amiga/sock.c, amiga/session.c, amiga/evloop.c
+- Removed server.c and branch.c from Makefile.bebbo
+- Added amiga/sock.c, amiga/session.c, amiga/evloop.c to Makefile.bebbo
+- Added global variable declarations to amiga/sock.c (sockfd, sockfd_used, n_servers, ext_rand, server_flag)
+- Forced PF_INET in amiga/sock.c for AmigaOS 3 IPv6 limitations
+- Added ENOTSOCK/EOPNOTSUPP error handling in amiga/session.c for robust accept() recovery
 
 --- New Amiga-specific files (.c) ---
 

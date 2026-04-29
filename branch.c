@@ -72,7 +72,7 @@ int branch (register void (*F) (void *), register void *arg, register size_t siz
   else
     arg = 0;
 
-#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(AMIGA) && !defined(DEBUGCHILD)
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(DEBUGCHILD)
 again:
   if (!(rc = fork ()))
   {

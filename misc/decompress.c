@@ -26,8 +26,10 @@
 static int detect_format(const char *path)
 {
     unsigned char buf[8];
-    FILE *f = fopen(path, "rb");
+    FILE *f;
     int n;
+
+    f = fopen(path, "rb");
 
     if (!f)
         return FMT_UNKNOWN;
@@ -58,13 +60,15 @@ static int detect_format(const char *path)
 static int is_ftn_bundle(const char *filename)
 {
     const char *p;
+    char a;
+    char b;
 
     for (p = filename; *p; p++)
     {
         if (p[0] == '.' && p[1] && p[2])
         {
-            char a = (char)tolower((unsigned char)p[1]);
-            char b = (char)tolower((unsigned char)p[2]);
+            a = (char)tolower((unsigned char)p[1]);
+            b = (char)tolower((unsigned char)p[2]);
 
             if ((a == 's' && b == 'u') || (a == 'm' && b == 'o') ||
                 (a == 't' && b == 'u') || (a == 'w' && b == 'e') ||
@@ -99,6 +103,7 @@ static int run_decompressor(int fmt, const char *path, const char *outdir)
 {
     char cmd[MAX_CMD];
     const char *basename;
+    int rc;
 
     /* Security: validate basename for invalid characters (not full path) */
     /* Find the last path separator (/ : \) to extract basename */
@@ -158,7 +163,7 @@ static int run_decompressor(int fmt, const char *path, const char *outdir)
         return -1;
     }
 
-    int rc = system(cmd);
+    rc = system(cmd);
 
     if (rc == 0 || rc == 1)
         return 0;

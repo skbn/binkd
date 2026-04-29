@@ -48,9 +48,11 @@
 #include "rfc2553.h"
 #include "srv_gai.h"
 
-#if defined(HAVE_THREADS) || defined(AMIGA)
+#if defined(HAVE_THREADS)
 extern MUTEXSEM lsem;
 extern EVENTSEM eothread;
+#elif defined(AMIGA)
+extern MUTEXSEM lsem;
 #endif
 
 static void call (void *arg);
@@ -157,7 +159,9 @@ static int do_client(BINKD_CONFIG *config)
         unlock_config_structure(config, 0);
         rel_grow_handles (-6);
         threadsafe(--n_clients);
+#ifdef HAVE_THREADS
         PostSem(&eothread);
+#endif
         Log (1, "cannot branch out");
         SLEEP(1);
       }
@@ -165,7 +169,7 @@ static int do_client(BINKD_CONFIG *config)
       else
       {
         Log (5, "started client #%i, id=%i", n_clients, pid);
-#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(AMIGA)
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS)
         unlock_config_structure(config, 0); /* Forked child has own copy */
 #endif
       }

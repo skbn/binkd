@@ -93,7 +93,16 @@ void do_accept(SOCKET lfd, BINKD_CONFIG *config)
     if (fd == INVALID_SOCKET)
     {
         if (TCPERRNO != EWOULDBLOCK && TCPERRNO != EAGAIN)
+        {
             Log(1, "accept(): %s", TCPERR());
+
+            /* ENOTSOCK/EOPNOTSUPP: listen socket lost or no longer valid
+             * Close all listen sockets to allow evloop to recover */
+            if (TCPERRNO == ENOTSOCK || TCPERRNO == EOPNOTSUPP)
+            {
+                close_listen_sockets();
+            }
+        }
 
         return;
     }

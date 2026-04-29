@@ -32,7 +32,9 @@ void trim_nl(char *s)
 /* str_trim -- Strip trailing whitespace (space, \r, \n) from string */
 void str_trim(char *s)
 {
-    int n = (int)strlen(s);
+    int n;
+
+    n = (int)strlen(s);
 
     while (n > 0 && (s[n - 1] == '\r' || s[n - 1] == '\n' || s[n - 1] == ' '))
         s[--n] = '\0';
@@ -213,7 +215,9 @@ long get_file_mtime(const char *path)
 int port_path_exists(const char *p)
 {
 #ifdef AMIGA
-    BPTR l = Lock((STRPTR)p, ACCESS_READ);
+    BPTR l;
+
+    l = Lock((STRPTR)p, ACCESS_READ);
 
     if (l)
     {
@@ -232,9 +236,12 @@ int port_path_exists(const char *p)
 int is_directory(const char *p)
 {
 #ifdef AMIGA
-    BPTR l = Lock((STRPTR)p, ACCESS_READ);
+    BPTR l;
     struct FileInfoBlock *fib;
-    int res = 0;
+    int res;
+
+    l = Lock((STRPTR)p, ACCESS_READ);
+    res = 0;
 
     if (l)
     {
@@ -265,9 +272,12 @@ int is_directory(const char *p)
 int is_regular_file(const char *p)
 {
 #ifdef AMIGA
-    BPTR l = Lock((STRPTR)p, ACCESS_READ);
+    BPTR l;
     struct FileInfoBlock *fib;
-    int res = 0;
+    int res;
+
+    l = Lock((STRPTR)p, ACCESS_READ);
+    res = 0;
 
     if (l)
     {
@@ -301,6 +311,8 @@ int is_regular_file(const char *p)
 int is_safe_filename(const char *name)
 {
     size_t len;
+    size_t i;
+    unsigned char c;
 
     if (!name || !*name)
         return 0;
@@ -318,9 +330,9 @@ int is_safe_filename(const char *name)
         return 0;
     
     /* Whitelist: only alphanumeric, dot, underscore, hyphen */
-    for (size_t i = 0; i < len; i++)
+    for (i = 0; i < len; i++)
     {
-        unsigned char c = (unsigned char)name[i];
+        c = (unsigned char)name[i];
 
         if (!(isalnum(c) || c == '.' || c == '_' || c == '-'))
             return 0;
@@ -333,7 +345,9 @@ int is_safe_filename(const char *name)
 int port_mkdir_one(const char *p)
 {
 #ifdef AMIGA
-    BPTR l = CreateDir((STRPTR)p);
+    BPTR l;
+
+    l = CreateDir((STRPTR)p);
 
     if (l)
     {
@@ -448,7 +462,9 @@ void path_join(char *out, int outsize, const char *base, const char *sub)
 int make_abs_path(const char *src, char *dst, int dstlen)
 {
 #ifdef AMIGA
-    BPTR lock = Lock((STRPTR)src, SHARED_LOCK);
+    BPTR lock;
+
+    lock = Lock((STRPTR)src, SHARED_LOCK);
 
     if (!lock)
     {
@@ -517,9 +533,13 @@ int make_abs_path(const char *src, char *dst, int dstlen)
  */
 int parse_config_line(const char *line, char *key, int klen, char *val, int vlen)
 {
-    const unsigned char *p = (const unsigned char *)line;
+    const unsigned char *p;
     char *kdst, *vdst;
-    int kcnt = 0, vcnt = 0;
+    int kcnt, vcnt;
+
+    p = (const unsigned char *)line;
+    kcnt = 0;
+    vcnt = 0;
 
     if (!line || !key || klen <= 0 || !val || vlen <= 0)
         return 0;
@@ -580,7 +600,9 @@ int config_get(const char *filename, const char *key, char *val, int vlen)
     FILE *f;
     char line[MAX_LINE];
     char kbuf[64];
-    int found = 0;
+    int found;
+
+    found = 0;
 
     if (!filename || !key || !val || vlen <= 0)
         return 0;
@@ -776,7 +798,8 @@ int config_lookup(ConfigCache *cache, const char *key, char *val, int vlen)
 /* config_cache_free -- Free cached config memory */
 void config_cache_free(ConfigCache *cache)
 {
-    ConfigEntry *entry, *next;
+    ConfigEntry *entry;
+    ConfigEntry *next;
 
     if (!cache)
         return;

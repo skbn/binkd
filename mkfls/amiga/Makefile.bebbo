@@ -44,12 +44,10 @@ SRCS = \
   ftnaddr.c       \
   ftnq.c          \
   client.c        \
-  server.c        \
   protocol.c      \
   bsy.c           \
   inbound.c       \
   breaksig.c      \
-  branch.c        \
   amiga/rename.c  \
   amiga/getfree.c \
   amiga/bsdsock.c \
@@ -87,12 +85,10 @@ OBJS = \
   $(OBJDIR)/ftnaddr.o       \
   $(OBJDIR)/ftnq.o          \
   $(OBJDIR)/client.o        \
-  $(OBJDIR)/server.o        \
   $(OBJDIR)/protocol.o      \
   $(OBJDIR)/bsy.o           \
   $(OBJDIR)/inbound.o       \
   $(OBJDIR)/breaksig.o      \
-  $(OBJDIR)/branch.o        \
   $(OBJDIR)/rename.o        \
   $(OBJDIR)/getfree.o       \
   $(OBJDIR)/bsdsock.o       \

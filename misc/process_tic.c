@@ -28,9 +28,10 @@ static int parse_keyword_field(char *line, const char *keyword, char *out, int o
     char *p;
     char *end;
     int len;
-    int klen = (int)strlen(keyword);
+    int klen;
     int i;
 
+    klen = (int)strlen(keyword);
     p = skip_ws(line);
 
     for (i = 0; i < klen; i++)
@@ -162,12 +163,13 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
     char src_path[MAXPATHLEN];
     char area_dir[MAXPATHLEN];
     char dst_path[MAXPATHLEN];
+    long fsize;
 
     file_name[0] = '\0';
     area_name[0] = '\0';
     origin_name[0] = '\0';
     from_name[0] = '\0';
-    long fsize = 0;
+    fsize = 0;
 
     f = fopen(ticpath, "r");
 
@@ -242,7 +244,9 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
 
 static int is_tic_file(const char *name)
 {
-    int len = (int)strlen(name);
+    int len;
+
+    len = (int)strlen(name);
 
     if (len < 5)
         return 0;

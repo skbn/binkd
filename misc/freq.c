@@ -89,14 +89,21 @@ int main(int argc, char *argv[])
     const char *outbound;
     const char *arg_outbound;
     const char *arg_addr;
-    const char *password = NULL; /* --password <pass> !pass suffix */
-    long newer_than = 0;         /* --newer-than <unixts> +ts suffix */
-    int update = 0;              /* --update  U suffix */
-    int use_bso = 0;
-    int use_zone_ext = 0; /* --zone-ext use outbound.ZZZ/ */
-    int argi = 1;
-    int nfiles = 0;
+    const char *password;
+    long newer_than;
+    int update;
+    int use_bso;
+    int use_zone_ext;
+    int argi;
+    int nfiles;
 
+    password = NULL;
+    newer_than = 0;
+    update = 0;
+    use_bso = 0;
+    use_zone_ext = 0;
+    argi = 1;
+    nfiles = 0;
     zone = net = node = point = 0;
 
     /* Parse flags -- All optional, order-independent, before positional args */
@@ -133,8 +140,11 @@ int main(int argc, char *argv[])
             /* Support both Unix timestamp (seconds since epoch) and relative time
              * - With suffix (7d, 1h, 30m): treated as relative time from now
              * - Plain number: treated as absolute Unix timestamp */
-            char *time_arg = argv[++argi];
-            long parsed = parse_time(time_arg);
+            char *time_arg;
+            long parsed;
+
+            time_arg = argv[++argi];
+            parsed = parse_time(time_arg);
 
             /* Validate parsed value (reject negative values) */
             if (parsed < 0)

@@ -23,10 +23,6 @@
 #include <sys/wait.h>
 #endif
 
-#ifdef AMIGA
-#include "amiga/bsdsock.h"
-#endif
-
 #include "sys.h"
 #include "iphdr.h"
 #include "readcfg.h"
@@ -43,7 +39,7 @@
 #endif
 #include "rfc2553.h"
 
-#if defined(HAVE_THREADS) || defined(AMIGA)
+#if defined(HAVE_THREADS)
 extern EVENTSEM eothread;
 #endif
 
@@ -111,11 +107,7 @@ static int do_server(BINKD_CONFIG *config)
   /* setup hints for getaddrinfo */
   memset((void *)&hints, 0, sizeof(hints));
   hints.ai_flags = AI_PASSIVE;
-#ifdef AMIGA
-  hints.ai_family = PF_INET;  /* AmigaOS 3 does not support IPv6 */
-#else
   hints.ai_family = PF_UNSPEC;
-#endif
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
 
@@ -154,30 +146,12 @@ static int do_server(BINKD_CONFIG *config)
         Log (1, "servmgr setsockopt (SO_REUSEADDR): %s", TCPERR ());
     
       {
-#ifdef AMIGA
-        /* bsdsocket may hold the port briefly after socket close. Retry */
-        int bind_retries = 6;
-
-        while (bind(sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
-        {
-          if (--bind_retries == 0)
-          {
-			Log(1, "servmgr bind(): %s", TCPERR());
-			soclose(sockfd[sockfd_used]);
-			return -1;
-		  }
-
-          Log(2, "servmgr bind(): %s, retry in 2s...", TCPERR());
-          sleep(2);
-        }
-#else
         if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
         {
 			Log(1, "servmgr bind(): %s", TCPERR ());
 			soclose(sockfd[sockfd_used]);
 			return -1;
 		}
-#endif
       }
       if (listen (sockfd[sockfd_used], 5) != 0)
       {
@@ -282,18 +256,6 @@ static int do_server(BINKD_CONFIG *config)
           }
           continue;
         }
-#if defined(AMIGA)
-        /* select() failing with ENOTSOCK/EBADF: listen socket lost
-         * Restart cleanly instead of crashing */
-        if (TCPERRNO == ENOTSOCK || TCPERRNO == EBADF)
-        {
-          Log(2, "servmgr select(): %s — restarting", TCPERR());
-          for (curfd = 0; curfd < sockfd_used; curfd++)
-            soclose(sockfd[curfd]);
-          sockfd_used = 0;
-          return 0;
-        }
-#endif
         Log (1, "servmgr select(): %s", TCPERR ());
         goto accepterr;
     }
@@ -320,18 +282,6 @@ static int do_server(BINKD_CONFIG *config)
             continue;
 #endif
         accepterr:
-#if defined(OS2) || defined(AMIGA)
-          /* ENOTSOCK/EOPNOTSUPP: listen socket lost or no longer valid
-           * Restart do_server() cleanly instead of dying */
-          if (save_errno == ENOTSOCK || save_errno == EOPNOTSUPP)
-          {
-            for (curfd = 0; curfd < sockfd_used; curfd++)
-              soclose(sockfd[curfd]);
-
-            sockfd_used = 0;
-            return 0;  /* will force socket re-creation */
-          }
-#endif
           return -1;
         }
       }
@@ -371,7 +321,9 @@ static int do_server(BINKD_CONFIG *config)
           soclose(new_sockfd);
           rel_grow_handles (-6);
           threadsafe(--n_servers);
+#ifdef HAVE_THREADS
           PostSem(&eothread);
+#endif
           Log (1, "servmgr branch(): cannot branch out");
           sleep(1);
         }
@@ -413,5 +365,7 @@ void servmgr (void)
   } while (status == 0 && !binkd_exit);
   Log(4, "downing servmgr...");
   pidsmgr = 0;
+#ifdef HAVE_THREADS
   PostSem(&eothread);
+#endif
 }

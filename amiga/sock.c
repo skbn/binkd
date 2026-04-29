@@ -21,8 +21,10 @@
 #include "amiga/bsdsock.h"
 #include "amiga/evloop_int.h"
 
-extern SOCKET sockfd[];
-extern int sockfd_used;
+SOCKET sockfd[MAX_LISTENSOCK];
+int sockfd_used = 0;
+int n_servers = 0;
+int ext_rand = 0;
 extern int server_flag;
 
 void set_nonblock(SOCKET fd)
@@ -41,7 +43,7 @@ int open_listen_sockets(BINKD_CONFIG *config)
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_flags = AI_PASSIVE;
-    hints.ai_family = PF_UNSPEC;
+    hints.ai_family = PF_INET;  /* AmigaOS 3 does not support IPv6 */
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 

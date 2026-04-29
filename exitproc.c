@@ -39,8 +39,11 @@ extern MUTEXSEM lsem;
 extern MUTEXSEM blsem;
 extern MUTEXSEM varsem;
 extern MUTEXSEM config_sem;
-extern EVENTSEM eothread;
 extern EVENTSEM wakecmgr;
+#endif
+
+#ifdef HAVE_THREADS
+extern EVENTSEM eothread;
 #endif
 
 int binkd_exit;
@@ -154,7 +157,6 @@ void exitfunc (void)
 	 * Clean Exec semaphores in safe order before freeing config */
 	close_srvmgr_socket();
 	CleanEventSem(&wakecmgr);
-	CleanEventSem(&eothread);
 	CleanSem(&varsem);
 	CleanSem(&blsem);
 	CleanSem(&lsem);
@@ -198,7 +200,9 @@ void exitfunc (void)
   CleanSem (&lsem);
   CleanSem (&blsem);
   CleanSem (&varsem);
+#ifdef HAVE_THREADS
   CleanEventSem (&eothread);
+#endif
   CleanEventSem (&wakecmgr);
 #ifdef OS2
   CleanSem (&fhsem);
