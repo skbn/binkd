@@ -99,6 +99,31 @@ static void write_ticentry(const char *logfile, const char *file_name, const cha
     fclose(f);
 }
 
+static void append_log(const char *logfile, const char *file_name, const char *origin_name, const char *from_name)
+{
+    FILE *f;
+    time_t t;
+    struct tm tm;
+    char timestamp[64];
+    const char *ftn_origin;
+
+    if (!logfile || !logfile[0])
+        return;
+
+    f = fopen(logfile, "a");
+    if (!f)
+        return;
+
+    t = time(NULL);
+    safe_localtime(&t, &tm);
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &tm);
+
+    ftn_origin = (origin_name && origin_name[0]) ? origin_name : (from_name   && from_name[0])   ? from_name   : "unknown";
+
+    fprintf(f, "[%s] %-30s  from %s\n", timestamp, file_name, ftn_origin);
+    fclose(f);
+}
+
 static void append_filelist(const char *listpath, const char *file_name, long filesize, const char *dst_path)
 {
     FILE *f;
@@ -233,9 +258,9 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
         return;
     }
 
-    write_ticentry(logfile, file_name, area_name, origin_name, from_name, src_path, dst_path);
     write_ticentry(ticlog, file_name, area_name, origin_name, from_name, src_path, dst_path);
 
+	append_log(logfile, file_name, origin_name, from_name);
     append_filelist(filelist, file_name, fsize, dst_path);
     append_newfiles(newfiles, file_name, fsize, dst_path);
 

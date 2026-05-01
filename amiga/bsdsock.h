@@ -50,7 +50,7 @@
 #endif
 
 /* Per-task SocketBase override */
-struct Library *SocketBase;
+extern struct Library *SocketBase;
 
 #ifdef SocketBase
 #undef SocketBase

@@ -12,7 +12,8 @@
  */
 
 #ifdef AMIGA
-unsigned long __stack = 0xFFFF;
+/*unsigned long __stack = 0xFFFF;*/
+const char __attribute__((used)) binkd_stack_size[] = "$STACK:65536";
 #endif
 
 #include <stdlib.h>

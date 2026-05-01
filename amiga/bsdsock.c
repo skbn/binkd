@@ -23,6 +23,7 @@ struct Library *SocketBase = NULL;
 #endif
 
 #include <proto/socket.h>
+#include <libraries/bsdsocket.h>
 #include <errno.h>
 
 extern void Log(int lev, const char *s, ...);
@@ -41,7 +42,8 @@ int amiga_sock_init()
     }
 
     /* Link the per-task errno to the TCP stack. */
-    SetErrnoPtr(&errno, (LONG)sizeof(errno));
+    /* Use SocketBaseTags with SBTC_ERRNOPTR (modern API, SetErrnoPtr is deprecated) */
+    SocketBaseTags(SBTM_SETVAL(SBTC_ERRNOPTR(sizeof(errno))), &errno, TAG_END);
 
     return 0;
 }

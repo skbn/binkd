@@ -32,15 +32,18 @@ CFLAGS= -m64 -pipe -Wall -O2
 LFLAGS= -m64
 endif
 
-OUTDIR=bin
-BINKDTYPE=mingw32
-
 # Architecture suffix for executable names
 ifeq ($(ARCH),win32)
 ARCH_SUFFIX=x32
+OBJDIR_SUFFIX=objs_x32
 else
 ARCH_SUFFIX=x64
+OBJDIR_SUFFIX=objs_x64
 endif
+
+OUTDIR=bin
+OBJDIR=$(OUTDIR)/$(OBJDIR_SUFFIX)
+BINKDTYPE=mingw32
 
 CDEFS?=  -DHAVE_THREADS -DHAVE_UNISTD -DHAVE_INTTYPES_H -DHAVE_INTMAX_T \
          -DWIN32 -DHAVE_IO_H -DHAVE_DOS_H -DHAVE_STDARG_H               \
@@ -58,7 +61,6 @@ SRCS= binkd.c readcfg.c tools.c ftnaddr.c ftnq.c client.c server.c protocol.c \
 
 RES=  nt/binkdres.rc
 
-OBJDIR= $(OUTDIR)/obj
 MAKEDIRSONLY= $(OBJDIR) $(OBJDIR)/nt $(OBJDIR)/ntlm
 MAKEDIRS= $(OUTDIR) $(MAKEDIRSONLY)
 
@@ -226,9 +228,20 @@ BINKDEXE = $(BINKDNAME).exe
 OBJS=$(addprefix $(OBJDIR)/,$(patsubst %.c,%.o, $(SRCS)))
 RESOBJS=$(addprefix $(OBJDIR)/, $(patsubst %.rc,%.o, $(RES)))
 
-.PHONY: all printinfo install html clean distclean makedirs misc misc-clean
+.PHONY: all all-32 all-64 all-both printinfo install html clean distclean makedirs misc misc-clean
 
-all: printinfo makedirs $(OUTDIR)/$(BINKDEXE) misc
+all: all-32 all-64
+
+all-32:
+	@$(MAKE) -f Makefile.crossmingw32 ARCH=win32 build-one
+
+all-64:
+	@$(MAKE) -f Makefile.crossmingw32 ARCH=win64 build-one
+
+build-one: printinfo makedirs $(OUTDIR)/$(BINKDEXE) misc
+
+all-both:
+	@$(MAKE) -f Makefile.crossmingw32 all
 
 printinfo:
 	@echo "-----------------------------------------------------------"

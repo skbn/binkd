@@ -1,0 +1,123 @@
+# $Id$
+APPL=binkd
+
+CC=gcc
+AWK=gawk
+INSTALL=/usr/bin/install -c
+
+# prepend prefix to installed program names
+prefix=/usr/local
+CONFDIR=${prefix}/etc
+DATADIR=/usr/local/share
+MANDIR=$(DATADIR)/man
+DOCDIR=$(DATADIR)/doc/$(APPL)
+
+SRCS=md5b.c binkd.c readcfg.c tools.c ftnaddr.c ftnq.c client.c server.c protocol.c bsy.c inbound.c breaksig.c branch.c unix/rename.c unix/getfree.c ftndom.c ftnnode.c srif.c pmatch.c readflo.c prothlp.c iptools.c rfc2553.c run.c binlog.c exitproc.c getw.c xalloc.c crypt.c unix/setpttl.c unix/daemonize.c bsycleanup.c  unix/ns_parse.c https.c compress.c srv_gai.c
+OBJS=${SRCS:.c=.o}
+AUTODEFS=-DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_SYS_VFS_H=1 -DHAVE_SYS_STATFS_H=1 -DHAVE_SYS_STATVFS_H=1 -DHAVE_SYS_PARAM_H=1 -DHAVE_SYS_MOUNT_H=1 -DHAVE_ARPA_INET_H=1 -DHAVE_SYS_IOCTL_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_STDARG_H=1 -DHAVE_NETINET_IN_H=1 -DHAVE_NETDB_H=1 -DHAVE_ARPA_NAMESER_H=1 -DHAVE_RESOLV_H=1 -DHAVE_SNPRINTF=1 -DHAVE_VSNPRINTF=1 -DHAVE_VSYSLOG=1 -DHAVE_WAITPID=1 -DHAVE_STATVFS=1 -DHAVE_STATFS=1 -DHAVE_UNAME=1 -DHAVE_DAEMON=1 -DHAVE_SETSID=1 -DHAVE_GETOPT=1 -DHAVE_LOCALTIME_R=1 -DHAVE_STRTOUMAX=1 -DHAVE_SIGPROCMASK=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_FSEEKO=1 -DHAVE_NS_MSG__MSG_PTR=1 -DSIZEOF_SHORT=2 -DSIZEOF_INT=4 -DSIZEOF_LONG=8 -DHAVE_SOCKLEN_T=1 -DHAVE_INTMAX_T=1 -DSYS5SIGNALS=1 -DHAVE_FACILITYNAMES=1 -DHAVE_TIOCNOTTY=1 -DHAVE_MSG_NOSIGNAL=1 -DHTTPS=1 -DAF_FORCE=1 -DAMIGADOS_4D_OUTBOUND=1 -DBW_LIM=1 -DWITH_ZLIB=1
+AUTOLIBS=-lz 
+DEFINES=$(AUTODEFS) -DHAVE_FORK -DUNIX -DOS="\"UNIX\"" -DPROTOTYPES
+CPPFLAGS=
+CFLAGS=-Wall -Wno-char-subscripts -O2 -g -O2
+LDFLAGS=
+LIBS=$(AUTOLIBS)
+
+all: compile banner utils
+
+compile: $(APPL)
+
+$(APPL): $(OBJS)
+	@echo Linking $(APPL)...
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+banner:
+	@echo
+	@echo
+	@echo " Binkd is successfully compiled.                             "
+	@echo
+	@echo " If you want to install Binkd files into $(DESTDIR)$(prefix) "
+	@echo "     1. Run \`make -n install' to be sure this makefile will "
+	@echo "        do not something criminal during the installation;   "
+	@echo "     2. \`su' to root;                                       "
+	@echo "     3. Run \`make install' to install Binkd.                "
+	@echo "     4. Edit $(CONFDIR)/$(APPL).conf-dist and RENAME it or"
+	@echo "        MOVE it somewhere (so another \`make install' will   "
+	@echo "        not overwrite it during your next Binkd upgrade)     "
+	@echo
+	@echo " If you want to put the files into some other directory just "
+	@echo " run \`configure --prefix=/another/path' and go to step 1.   "
+	@echo
+
+utils: decompress process_tic freq srifreq nodelist
+
+TOOL_CFLAGS = $(DEFINES) $(CPPFLAGS) $(CFLAGS) -I. -I misc
+
+decompress: misc/decompress.c misc/portable.c misc/portable.h
+	@echo Compiling decompress...
+	@$(CC) $(TOOL_CFLAGS) -o $@ misc/decompress.c misc/portable.c
+
+process_tic: misc/process_tic.c misc/portable.c misc/portable.h
+	@echo Compiling process_tic...
+	@$(CC) $(TOOL_CFLAGS) -o $@ misc/process_tic.c misc/portable.c
+
+freq: misc/freq.c misc/portable.c misc/portable.h
+	@echo Compiling freq...
+	@$(CC) $(TOOL_CFLAGS) -o $@ misc/freq.c misc/portable.c
+
+srifreq: misc/srifreq.c misc/portable.c misc/portable.h
+	@echo Compiling srifreq...
+	@$(CC) $(TOOL_CFLAGS) -o $@ misc/srifreq.c misc/portable.c
+
+nodelist: misc/nodelist.c misc/portable.c
+	@echo Compiling nodelist...
+	@$(CC) $(TOOL_CFLAGS) -o $@ misc/nodelist.c misc/portable.c
+
+.PHONY: decompress process_tic freq srifreq nodelist
+
+.version: $(APPL)
+	@./$(APPL) -v | $(AWK) '{ print $$2; }' > $@
+
+install: compile .version
+	./mkinstalldirs $(DESTDIR)$(prefix)/sbin
+	$(INSTALL) -s $(APPL) $(DESTDIR)$(prefix)/sbin/$(APPL)-`cat .version`
+	rm -f $(DESTDIR)$(prefix)/sbin/$(APPL)
+	(VER=`cat .version` ; cd $(DESTDIR)$(prefix)/sbin ; ln -s $(APPL)-$$VER $(APPL) )
+	./mkinstalldirs $(DESTDIR)$(MANDIR)/man8
+	$(INSTALL) -m 644 $(APPL).8 $(DESTDIR)$(MANDIR)/man8/$(APPL).8
+	./mkinstalldirs $(DESTDIR)$(CONFDIR)
+	$(INSTALL) -m 644 $(APPL).conf $(DESTDIR)$(CONFDIR)/$(APPL).conf-dist
+	./mkinstalldirs $(DESTDIR)$(DOCDIR)
+	$(INSTALL) -m 644 binkdfaq-??.txt $(DESTDIR)$(DOCDIR)
+
+clean:
+	rm -f *.[bo] unix/*.[bo] ntlm/*.[bo] *.BAK *.core *.obj *.err
+	rm -f *~ core config.cache config.log config.status
+	rm -f binkd decompress process_tic freq srifreq nodelist
+
+cleanall: clean
+	rm -f $(APPL) Makefile Makefile.dep Makefile.in
+	rm -f configure configure.in .version install-sh mkinstalldirs
+
+# targets for compatibility
+mostlyclean: clean
+distclean: cleanall
+realclean: cleanall
+
+.c.o:
+	@echo Compiling $*.c...
+	@$(CC) -c $(DEFINES) $(CPPFLAGS) $(CFLAGS) -o $*.o $*.c
+
+binkd.txt: binkd.8
+	@groff -Tascii -mman binkd.8 | perl -npe 's/.\010//g' >binkd.txt
+
+depend Makefile.dep:   Makefile
+	@echo Making depends...
+	@$(CC) -MM $(DEFINES) $(CPPFLAGS) $(CFLAGS) $(SRCS) $(SYS) | \
+	      $(AWK) '{ if ($$1 != prev) { if (rec != "") print rec; \
+		  rec = $$0; prev = $$1; } \
+		  else { if (length(rec $$2) > 78) { print rec; rec = $$0; } \
+		  else rec = rec " " $$2 } } \
+		  END { print rec }' > Makefile.dep
+
+
+include Makefile.dep

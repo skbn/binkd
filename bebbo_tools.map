@@ -1,0 +1,522 @@
+Archive member included to satisfy reference by file (symbol)
+
+/opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+                              /tmp/ccah153K.o (fclose)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__nocommandline.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o (__nocommandline)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(rename.o)
+                              /tmp/ccNhisyM.o (rename)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(stat.o)
+                              /tmp/ccNhisyM.o (stat)
+/opt/amiga/m68k-amigaos/libnix/lib/libnixmain.a(__stdiowin.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__nocommandline.o) (__stdiowin)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__bufsiz.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o) (__BUFSIZ)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__fflush.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o) (__fflush)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initcpp.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o (__initcpp)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initlibraries.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o (__initlibraries)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__seterrno.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o) (__seterrno)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__stat.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(stat.o) (__stat)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(_ctype_.o)
+                              /tmp/ccah153K.o (_ctype_)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(atoi.o)
+                              /tmp/ccah153K.o (atoi)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fgets.o)
+                              /tmp/ccah153K.o (fgets)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fopen.o)
+                              /tmp/ccah153K.o (fopen)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fprintf.o)
+                              /tmp/ccah153K.o (fprintf)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fread.o)
+                              /tmp/ccNhisyM.o (fread)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(freopen.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fopen.o) (freopen)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fwrite.o)
+                              /tmp/ccah153K.o (fwrite)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(getc.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fgets.o) (getc)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(localtime.o)
+                              /tmp/ccNhisyM.o (localtime)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(malloc.o)
+                              /tmp/ccNhisyM.o (malloc)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(memcpy.o)
+                              /tmp/ccNhisyM.o (memcpy)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(open.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(freopen.o) (open)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(perror.o)
+                              /tmp/ccah153K.o (perror)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(putc.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fwrite.o) (putc)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(realloc.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(open.o) (realloc)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(remove.o)
+                              /tmp/ccNhisyM.o (remove)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(sscanf.o)
+                              /tmp/ccah153K.o (sscanf)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strcat.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initlibraries.o) (strcat)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strchr.o)
+                              /tmp/ccah153K.o (strchr)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strcmp.o)
+                              /tmp/ccah153K.o (strcmp)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strerror.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(perror.o) (strerror)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strncpy.o)
+                              /tmp/ccah153K.o (strncpy)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strstr.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initlibraries.o) (strstr)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strtol.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(atoi.o) (strtol)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strtoul.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strtol.o) (strtoul)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(vfprintf.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fprintf.o) (vfprintf)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(vsscanf.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(sscanf.o) (vsscanf)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(write.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__fflush.o) (write)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(_MSTEP.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(malloc.o) (_MSTEP)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__chkabort.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(write.o) (__chkabort)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__gmtoffset.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(localtime.o) (timezone)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__srget.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fread.o) (__srget)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__swbuf.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(putc.o) (__swbuf)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__vfprintf_total_size.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(vfprintf.o) (__vfprintf_total_size)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(calloc.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fopen.o) (calloc)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fputs.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(perror.o) (fputs)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(gmtime.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(localtime.o) (gmtime)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(gmtime_r.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(gmtime.o) (gmtime_r)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(iswxdigit.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strtoul.o) (iswxdigit)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(memset.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(calloc.o) (memset)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(raise.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__chkabort.o) (raise)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(read.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__srget.o) (read)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(vfscanf.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(vsscanf.o) (vfscanf)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__signalfunc.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(raise.o) (__signalfunc)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__ulldivus.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__vfprintf_total_size.o) (__ulldivus)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix.a(ungetc.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(vfscanf.o) (ungetc)
+/opt/amiga/m68k-amigaos/lib//libstubs.a(dos.o)
+                              /tmp/ccNhisyM.o (DOSBase)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__divsi3.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(gmtime_r.o) (__modsi3)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__mulsi3.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fread.o) (__mulsi3)
+/opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__udivsi3.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__ulldivus.o) (__umodsi3)
+/opt/amiga/m68k-amigaos/lib//libstubs.a(utility.o)
+                              /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__divsi3.o) (UtilityBase)
+
+Allocating common symbols
+Common symbol       size              file
+
+_WBenchMsg          0x4               /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+_tzname             0x8               /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__gmtoffset.o)
+__memsema           0x4               /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(malloc.o)
+__stdfiledes        0x4               /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+__memorylist        0xc               /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(malloc.o)
+__argv              0x4               /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+__stdfilesize       0x4               /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+__commandlen        0x4               /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+__commandline       0x4               /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+errno               0x10              /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+__env               0x4               /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+__argc              0x4               /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+
+Discarded input sections
+
+ .text          0x0000000000000000       0x14 /tmp/ccNhisyM.o
+ .text.trim_nl  0x0000000000000000       0x38 /tmp/ccNhisyM.o
+ .text.str_upper
+                0x0000000000000000       0x30 /tmp/ccNhisyM.o
+ .text.str_tolower
+                0x0000000000000000       0x2c /tmp/ccNhisyM.o
+ .text.skip_ws  0x0000000000000000       0x18 /tmp/ccNhisyM.o
+ .text.wildmatch
+                0x0000000000000000       0xc0 /tmp/ccNhisyM.o
+ .text.is_wildcard
+                0x0000000000000000       0x20 /tmp/ccNhisyM.o
+ .text.ensure_dir
+                0x0000000000000000       0x30 /tmp/ccNhisyM.o
+ .text.copy_file
+                0x0000000000000000       0xb4 /tmp/ccNhisyM.o
+ .text.move_file
+                0x0000000000000000       0x4c /tmp/ccNhisyM.o
+ .text.get_file_size
+                0x0000000000000000       0x24 /tmp/ccNhisyM.o
+ .text.get_file_mtime
+                0x0000000000000000       0x24 /tmp/ccNhisyM.o
+ .text.port_path_exists
+                0x0000000000000000       0x30 /tmp/ccNhisyM.o
+ .text.is_directory
+                0x0000000000000000       0x7c /tmp/ccNhisyM.o
+ .text.is_regular_file
+                0x0000000000000000       0x7c /tmp/ccNhisyM.o
+ .text.is_safe_filename
+                0x0000000000000000       0xbc /tmp/ccNhisyM.o
+ .text.port_mkdir_one
+                0x0000000000000000       0x2c /tmp/ccNhisyM.o
+ .text.safe_localtime
+                0x0000000000000000       0x28 /tmp/ccNhisyM.o
+ .text.mkdir_recursive
+                0x0000000000000000       0xfc /tmp/ccNhisyM.o
+ .text.safe_strncpy
+                0x0000000000000000       0x40 /tmp/ccNhisyM.o
+ .text.path_join
+                0x0000000000000000       0x7c /tmp/ccNhisyM.o
+ .text.make_abs_path
+                0x0000000000000000       0x80 /tmp/ccNhisyM.o
+ .text.parse_config_line
+                0x0000000000000000      0x180 /tmp/ccNhisyM.o
+ .text.config_get
+                0x0000000000000000       0xc8 /tmp/ccNhisyM.o
+ .text.parse_size
+                0x0000000000000000       0xa8 /tmp/ccNhisyM.o
+ .text.parse_time
+                0x0000000000000000       0xd4 /tmp/ccNhisyM.o
+ .text.config_load
+                0x0000000000000000       0xfc /tmp/ccNhisyM.o
+ .text.config_lookup
+                0x0000000000000000       0x74 /tmp/ccNhisyM.o
+ .text.config_cache_free
+                0x0000000000000000       0x38 /tmp/ccNhisyM.o
+ .text          0x0000000000000000       0xa8 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(rename.o)
+ .text          0x0000000000000000       0xd0 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(stat.o)
+ .text          0x0000000000000000        0x0 /opt/amiga/m68k-amigaos/libnix/lib/libnixmain.a(__stdiowin.o)
+ .text          0x0000000000000000        0x0 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__bufsiz.o)
+ .text          0x0000000000000000      0x1ec /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__stat.o)
+ .text          0x0000000000000000       0x84 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fread.o)
+ .text          0x0000000000000000       0x30 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(localtime.o)
+ .bss           0x0000000000000000        0x0 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(malloc.o)
+ .text          0x0000000000000000       0x2c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(remove.o)
+ .text          0x0000000000000000        0x0 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(_MSTEP.o)
+ .text          0x0000000000000000        0x4 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__gmtoffset.o)
+ .bss           0x0000000000000000        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__gmtoffset.o)
+ .text          0x0000000000000000       0x14 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(gmtime.o)
+ .bss           0x0000000000000000       0x24 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(gmtime.o)
+ .text          0x0000000000000000      0x224 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(gmtime_r.o)
+ .data          0x0000000000000000        0xc /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(gmtime_r.o)
+ .text          0x0000000000000000        0x0 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__signalfunc.o)
+ .text          0x0000000000000000       0x1c /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__divsi3.o)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+LOAD /tmp/ccah153K.o
+LOAD /tmp/ccNhisyM.o
+START GROUP
+LOAD /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a
+LOAD /opt/amiga/m68k-amigaos/libnix/lib/libnixmain.a
+LOAD /opt/amiga/m68k-amigaos/libnix/lib/libnix.a
+LOAD /opt/amiga/m68k-amigaos/lib//libstubs.a
+LOAD /opt/amiga/m68k-amigaos/lib//libamiga.a
+LOAD /opt/amiga/lib/gcc/m68k-amigaos/6.5.0b/libgcc.a
+END GROUP
+                [!provide]                        PROVIDE (___machtype = 0x0)
+                0x0000000000000000                . = 0x0
+
+.text           0x0000000000000000     0x5004
+                0x0000000000000000                __stext = .
+ *(.text)
+ .text          0x0000000000000000       0xd8 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+                0x0000000000000000                start
+                0x0000000000000064                _exit
+                0x0000000000000064                exit
+                0x000000000000007c                _Exit
+                0x000000000000007c                ___exit
+                0x00000000000000d4                __main
+ .text          0x00000000000000d8      0x1f0 /tmp/ccah153K.o
+ .text          0x00000000000002c8      0x840 /tmp/ccah153K.o
+                0x00000000000002c8                main
+ .text          0x0000000000000b08      0x5b8 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+                0x0000000000000b08                _setup_file
+                0x0000000000000b48                isatty
+                0x0000000000000b7c                _lx_fhfromfd
+                0x0000000000000ba4                fdopen
+                0x0000000000000cc0                __fclose
+                0x0000000000000df8                __initstdio
+                0x0000000000000f46                close
+                0x0000000000000fb2                fclose
+                0x0000000000001044                __exitstdio
+ .text          0x00000000000010c0      0x2b0 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__nocommandline.o)
+                0x00000000000010c0                __nocommandline
+                0x00000000000012e4                __exitcommandline
+ .text          0x0000000000001370       0x88 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__fflush.o)
+                0x0000000000001370                __fflush
+ .text          0x00000000000013f8       0x40 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initcpp.o)
+                0x00000000000013f8                __initcpp
+                0x000000000000141c                __exitcpp
+ .text          0x0000000000001438       0xc4 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initlibraries.o)
+                0x0000000000001454                __initlibraries
+                0x00000000000014b0                __exitlibraries
+ .text          0x00000000000014fc       0x94 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initlibraries.o)
+ .text          0x0000000000001590       0x3c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__seterrno.o)
+                0x0000000000001590                __seterrno
+ .text          0x00000000000015cc      0x10c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(_ctype_.o)
+                0x00000000000015cc                __ctype
+                0x00000000000016d0                __locale_ctype_ptr
+ .text          0x00000000000016d8       0x18 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(atoi.o)
+                0x00000000000016d8                atoi
+ .text          0x00000000000016f0       0x4c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fgets.o)
+                0x00000000000016f0                fgets
+ .text          0x000000000000173c       0xc0 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fopen.o)
+                0x000000000000173c                fopen
+ .text          0x00000000000017fc       0x1c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fprintf.o)
+                0x00000000000017fc                fprintf
+ .text          0x0000000000001818      0x128 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(freopen.o)
+                0x0000000000001818                freopen
+ .text          0x0000000000001940       0x84 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fwrite.o)
+                0x0000000000001940                fwrite
+ .text          0x00000000000019c4       0x30 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(getc.o)
+                0x00000000000019c4                getc
+ .text          0x00000000000019f4      0x238 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(malloc.o)
+                0x00000000000019f4                malloc
+                0x0000000000001af2                free
+                0x0000000000001b92                __initmalloc
+                0x0000000000001bd4                __exitmalloc
+ .text          0x0000000000001c2c       0x24 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(memcpy.o)
+                0x0000000000001c2c                memcpy
+ .text          0x0000000000001c50      0x16c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(open.o)
+                0x0000000000001c50                open
+                0x0000000000001ce6                __allocfd
+ .text          0x0000000000001dbc       0xc0 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(perror.o)
+                0x0000000000001dbc                perror
+ .text          0x0000000000001e7c       0x44 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(putc.o)
+                0x0000000000001e7c                putc
+ .text          0x0000000000001ec0       0x7c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(realloc.o)
+                0x0000000000001ec0                realloc
+ .text          0x0000000000001f3c       0x1c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(sscanf.o)
+                0x0000000000001f3c                sscanf
+ .text          0x0000000000001f58       0x14 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strcat.o)
+                0x0000000000001f58                strcat
+ .text          0x0000000000001f6c       0x1c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strchr.o)
+                0x0000000000001f6c                strchr
+                0x0000000000001f6c                index
+ .text          0x0000000000001f88       0x28 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strcmp.o)
+                0x0000000000001f88                strcmp
+ .text          0x0000000000001fb0      0xb0c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strerror.o)
+                0x00000000000029d4                strerror
+                0x0000000000002a1e                strerror_r
+ .text          0x0000000000002abc       0x24 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strncpy.o)
+                0x0000000000002abc                strncpy
+ .text          0x0000000000002ae0       0x38 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strstr.o)
+                0x0000000000002ae0                strstr
+ .text          0x0000000000002b18       0xc4 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strtol.o)
+                0x0000000000002b18                strtol
+ .text          0x0000000000002bdc      0x284 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strtoul.o)
+                0x0000000000002bdc                strtoul
+ .text          0x0000000000002e60       0x2c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(vfprintf.o)
+                0x0000000000002e60                vfprintf
+ .text          0x0000000000002e8c       0x40 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(vsscanf.o)
+                0x0000000000002e8c                vsscanf
+ .text          0x0000000000002ecc       0x9c /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(write.o)
+                0x0000000000002ecc                write
+ .text          0x0000000000002f68       0x30 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__chkabort.o)
+                0x0000000000002f68                __chkabort
+ .text          0x0000000000002f98      0x118 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__srget.o)
+                0x0000000000002f98                __srget
+ .text          0x00000000000030b0       0xf0 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__swbuf.o)
+                0x00000000000030b0                __swbuf
+ .text          0x00000000000031a0      0xc28 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__vfprintf_total_size.o)
+                0x00000000000031a8                __vfprintf_total_size
+ .text          0x0000000000003dc8       0x40 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(calloc.o)
+                0x0000000000003dc8                calloc
+ .text          0x0000000000003e08       0x38 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(fputs.o)
+                0x0000000000003e08                fputs
+ .text          0x0000000000003e40       0x30 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(iswxdigit.o)
+                0x0000000000003e40                iswxdigit
+ .text          0x0000000000003e70       0xa4 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(memset.o)
+                0x0000000000003e70                memset
+ .text          0x0000000000003f14       0xdc /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(raise.o)
+                0x0000000000003f1e                raise
+ .text          0x0000000000003ff0       0x80 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(read.o)
+                0x0000000000003ff0                read
+ .text          0x0000000000004070      0xc20 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(vfscanf.o)
+                0x0000000000004070                vfscanf
+ .text          0x0000000000004c90       0xb8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__ulldivus.o)
+                0x0000000000004c90                __ulldivus
+ .text          0x0000000000004d48       0xb8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(ungetc.o)
+                0x0000000000004d48                ungetc
+ .text          0x0000000000004e00        0xc /opt/amiga/m68k-amigaos/lib//libstubs.a(dos.o)
+ .text          0x0000000000004e0c       0x10 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__mulsi3.o)
+                0x0000000000004e0c                __mulsi3
+ .text          0x0000000000004e1c       0x1c /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__udivsi3.o)
+                0x0000000000004e1c                __umodsi3
+                0x0000000000004e28                __udivsi3
+ .text          0x0000000000004e38       0x10 /opt/amiga/m68k-amigaos/lib//libstubs.a(utility.o)
+ *(.text.main)
+ *(.text*)
+ .text.find_flag
+                0x0000000000004e48      0x110 /tmp/ccah153K.o
+ .text.str_trim
+                0x0000000000004f58       0x48 /tmp/ccNhisyM.o
+                0x0000000000004f58                str_trim
+ *(_*)
+ *(.rodata*)
+ *(.data.rel.ro*)
+ *(.gnu.linkonce.t.*)
+ *(.gnu.linkonce.r.*)
+ *(.gcc_except_table*)
+ *(SORT_BY_NAME(.list___EH_FRAME*))
+ *(SORT_BY_NAME(.list_*))
+ .list___CTOR_LIST__
+                0x0000000000004fa0        0x4 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+                0x0000000000004fa0                __CTOR_LIST__
+ .list___DTOR_LIST__
+                0x0000000000004fa4        0x4 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+                0x0000000000004fa4                __DTOR_LIST__
+ .list___EXIT_LIST__
+                0x0000000000004fa8        0x4 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+                0x0000000000004fa8                __EXIT_LIST__
+ .list___EXIT_LIST__
+                0x0000000000004fac        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+ .list___EXIT_LIST__
+                0x0000000000004fb4        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__nocommandline.o)
+ .list___EXIT_LIST__
+                0x0000000000004fbc        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initcpp.o)
+ .list___EXIT_LIST__
+                0x0000000000004fc4        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initlibraries.o)
+ .list___EXIT_LIST__
+                0x0000000000004fcc        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(malloc.o)
+ .list___INIT_LIST__
+                0x0000000000004fd4        0x4 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+                0x0000000000004fd4                __INIT_LIST__
+ .list___INIT_LIST__
+                0x0000000000004fd8        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+ .list___INIT_LIST__
+                0x0000000000004fe0        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__nocommandline.o)
+ .list___INIT_LIST__
+                0x0000000000004fe8        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initcpp.o)
+ .list___INIT_LIST__
+                0x0000000000004ff0        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__initlibraries.o)
+ .list___INIT_LIST__
+                0x0000000000004ff8        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(malloc.o)
+ *(.end_of_lists)
+ .end_of_lists  0x0000000000005000        0x4 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+                0x0000000000005004                ___datadata_relocs = .
+                0x0000000000005004                __etext = .
+                0x0000000000005004                ___text_size = SIZEOF (.text)
+                0x0000000000005004                . = ALIGN (0x0)
+
+.data           0x0000000000005004      0x33c
+                0x0000000000005004                __sdata = .
+ *(.data)
+ .data          0x0000000000005004        0xc /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+                0x0000000000005004                SysBase
+                0x0000000000005008                __SaveSP
+ .data          0x0000000000005010       0x10 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+                0x0000000000005010                __sF
+                0x0000000000005014                __filelist
+ .data          0x0000000000005020       0x1c /opt/amiga/m68k-amigaos/libnix/lib/libnixmain.a(__stdiowin.o)
+                0x0000000000005020                __stdiowin
+ .data          0x000000000000503c        0x4 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__bufsiz.o)
+                0x000000000000503c                __BUFSIZ
+ .data          0x0000000000005040       0xd0 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__seterrno.o)
+ .data          0x0000000000005110        0x4 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(_ctype_.o)
+                0x0000000000005110                _ctype_
+ .data          0x0000000000005114      0x210 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(strerror.o)
+                0x0000000000005114                __sys_errlist
+ .data          0x0000000000005324        0x4 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(_MSTEP.o)
+                0x0000000000005324                _MSTEP
+ *(SORT_BY_NAME(.data.*))
+ *(SORT_BY_NAME(.dlist___EH_FRAME_OBJECT*))
+ *(SORT_BY_NAME(.dlist_*))
+ .dlist___LIB_LIST__
+                0x0000000000005328        0x4 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+                0x0000000000005328                __LIB_LIST__
+ .dlist___LIB_LIST__
+                0x000000000000532c        0x8 /opt/amiga/m68k-amigaos/lib//libstubs.a(dos.o)
+                0x000000000000532c                DOSBase
+ .dlist___LIB_LIST__
+                0x0000000000005334        0x8 /opt/amiga/m68k-amigaos/lib//libstubs.a(utility.o)
+                0x0000000000005334                UtilityBase
+ *(.end_of_dlists)
+ .end_of_dlists
+                0x000000000000533c        0x4 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+ *(.data.__EH_FRAME_OBJECT__*)
+ *(.gnu.linkonce.d.*)
+                0x0000000000005340                __edata = .
+                0x000000000000033c                ___data_size = SIZEOF (.data)
+
+.bss            0x0000000000005340       0x7c
+                0x0000000000005340                __bss_start = .
+ *(.bss)
+ .bss           0x0000000000005340        0x4 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+ .bss           0x0000000000005344        0x4 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+ .bss           0x0000000000005348        0xc /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__nocommandline.o)
+ .bss           0x0000000000005354       0x20 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__signalfunc.o)
+                0x0000000000005354                __signalfunc
+                0x000000000000536c                __signalpending
+                0x0000000000005370                __signalmask
+ *(.bss.*)
+ *(COMMON)
+ COMMON         0x0000000000005374       0x18 /opt/amiga/m68k-amigaos/libnix/lib/ncrt0.o
+                0x0000000000005374                _WBenchMsg
+                0x0000000000005378                __argv
+                0x000000000000537c                __commandlen
+                0x0000000000005380                __commandline
+                0x0000000000005384                __env
+                0x0000000000005388                __argc
+ COMMON         0x000000000000538c       0x18 /opt/amiga/m68k-amigaos/libnix/lib/libnix20.a(__initstdio.o)
+                0x000000000000538c                __stdfiledes
+                0x0000000000005390                __stdfilesize
+                0x0000000000005394                errno
+ COMMON         0x00000000000053a4       0x10 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(malloc.o)
+                0x00000000000053a4                __memsema
+                0x00000000000053a8                __memorylist
+ COMMON         0x00000000000053b4        0x8 /opt/amiga/m68k-amigaos/libnix/lib/libnix.a(__gmtoffset.o)
+                0x00000000000053b4                _tzname
+                0x00000000000053bc                __end = .
+                0x000000000000007c                ___bss_size = SIZEOF (.bss)
+
+.datachip
+ *(.datachip)
+
+.bsschip
+ *(.bsschip)
+
+.dwarf          0x00000000000053bc        0x0
+                0x00000000000053bc                __debug_frame_start = .
+ *(.debug_frame)
+                0x00000000000053bc                __debug_info_start = .
+ *(.debug_info)
+                0x00000000000053bc                __debug_abbrev_start = .
+ *(.debug_abbrev)
+                0x00000000000053bc                __debug_loclists_start = .
+ *(.debug_loclists)
+                0x00000000000053bc                __debug_aranges_start = .
+ *(.debug_aranges)
+                0x00000000000053bc                __debug_rgnlists_start = .
+ *(.debug_rnglists)
+                0x00000000000053bc                __debug_line_start = .
+ *(.debug_line)
+                0x00000000000053bc                __debug_str_start = .
+ *(.debug_str)
+                0x00000000000053bc                __debug_line_str_start = .
+ *(.debug_line_str)
+OUTPUT(nodelist amiga)
