@@ -24,6 +24,7 @@
 
 #ifdef AMIGA
 #include "amiga/bsdsock.h"
+#include <proto/exec.h>
 #endif
 
 #include "sys.h"
@@ -725,8 +726,18 @@ int sdelete (char *path)
       Log (6, "unlinked `%s'", path);
       return 0;
     }
-    else if (errno == EPERM || errno == EACCES || errno == EAGAIN)
+    else if (errno == EPERM || errno == EACCES || errno == EAGAIN
+#ifdef EBUSY
+             || errno == EBUSY
+#endif
+            )
+    {
+#ifdef AMIGA
+      Delay(1);  /* 1 tick = 20ms @ 50Hz on AmigaOS */
+#else
       sleep (1);
+#endif
+    }
     else
       break;
   }
