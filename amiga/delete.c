@@ -2,9 +2,10 @@
  * delete.c -- Amiga-specific delete implementation using native DOS library
  *
  * This file provides o_delete() function that uses AmigaDOS DeleteFile()
- * instead of the standard C unlink() which doesn't work reliably on AmigaOS.
+ * instead of the standard C unlink() which doesn't work reliably on AmigaOS
  *
- * This file is part of binkd project
+ * Copyright (C) 2026 Tanausú M. 39:190/101@amiganet
+ * Licensed under the GNU GPL v2 or later
  */
 
 #include <dos/dos.h>
@@ -31,6 +32,7 @@ int o_delete(char *path)
     
     /* If deletion failed, try to determine why */
     lock = Lock((STRPTR)path, ACCESS_READ);
+
     if (lock)
     {
         /* File exists but cannot be deleted (probably locked or protected) */
