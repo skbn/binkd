@@ -20,6 +20,7 @@ int o_rename(char *from, char *to)
     char *d = NULL;
     const char *src = NULL;
     ULONG n = 0;
+    int result = -1;
 
     /* Try direct rename first */
     if (Rename((STRPTR)from, (STRPTR)to))
@@ -104,9 +105,6 @@ int o_rename(char *from, char *to)
         }
     }
 
-    FreeDosObject(DOS_FIB, fib);
-    UnLock(dirlock);
-
     /* Build new name */
     d = newname;
     src = to;
@@ -128,10 +126,23 @@ int o_rename(char *from, char *to)
     *d++ = '0' + (n % 10);
     *d = '\0';
 
-    /* Rename */
+    /* FIXED: Perform rename BEFORE releasing the lock to avoid race condition
+     * Previously, UnLock() was called before Rename(), allowing other processes
+     * to modify the directory state between unlock and rename operations
+     */
     if (Rename((STRPTR)from, (STRPTR)newname))
-        return 0;
+    {
+        result = 0;
+    }
+    else
+    {
+        errno = EACCES;
+        result = -1;
+    }
 
-    errno = EACCES;
-    return -1;
+    /* Now it's safe to release resources */
+    FreeDosObject(DOS_FIB, fib);
+    UnLock(dirlock);
+
+    return result;
 }

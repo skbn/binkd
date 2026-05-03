@@ -146,11 +146,8 @@ void bsy_remove (FTN_ADDR *fa0, bsy_t bt, BINKD_CONFIG *config)
             Log (2, "Can't close %s (handle %d): %s!", buf, bsy->h, strerror(errno));
 #endif
 
-#ifdef AMIGA
 	delete (buf);
-#else
-	sdelete (buf);
-#endif
+
 	/* remove empty point directory */
 	if (config->deletedirs)
 	{
@@ -197,11 +194,8 @@ void bsy_remove_all (BINKD_CONFIG *config)
           Log (2, "Can't close %s (handle %d): %s!", buf, bsy->h, strerror(errno));
 #endif
 
-#ifdef AMIGA
 	delete (buf);
-#else
-	sdelete (buf);
-#endif
+
       /* remove empty point directory */
       if (config->deletedirs && bsy->fa.p != 0 && (p = last_slash(buf)) != NULL)
       {

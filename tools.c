@@ -688,7 +688,11 @@ int delete (char *path)
 {
   int rc;
 
+#ifndef UNIX
+  if ((rc = sdelete (path)) != 0)
+#else
   if ((rc = unlink (path)) != 0)
+#endif
     Log (1, "error unlinking `%s': %s", path, strerror (errno));
   else
     Log (5, "unlinked `%s'", path);
@@ -722,7 +726,11 @@ int sdelete (char *path)
   int i, rc;
 
   for (i=0; i<5; i++) {
+#ifdef AMIGA
+    if ((rc = o_delete (path)) == 0) {
+#else
     if ((rc = unlink (path)) == 0) {
+#endif
       Log (6, "unlinked `%s'", path);
       return 0;
     }

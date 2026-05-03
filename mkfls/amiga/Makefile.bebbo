@@ -48,6 +48,7 @@ SRCS = \
   bsy.c           \
   inbound.c       \
   breaksig.c      \
+  amiga/delete.c  \
   amiga/rename.c  \
   amiga/getfree.c \
   amiga/bsdsock.c \
@@ -89,6 +90,7 @@ OBJS = \
   $(OBJDIR)/bsy.o           \
   $(OBJDIR)/inbound.o       \
   $(OBJDIR)/breaksig.o      \
+  $(OBJDIR)/delete.o        \
   $(OBJDIR)/rename.o        \
   $(OBJDIR)/getfree.o       \
   $(OBJDIR)/bsdsock.o       \
@@ -156,6 +158,9 @@ clean:
 	rm -f binkd decompress process_tic freq srifreq nodelist
 
 # ---------- Explicit rules for amiga/ objects ----------
+$(OBJDIR)/delete.o: amiga/delete.c
+	$(CC) -c $(CFLAGS) amiga/delete.c -o $(OBJDIR)/delete.o
+
 $(OBJDIR)/rename.o: amiga/rename.c
 	$(CC) -c $(CFLAGS) amiga/rename.c -o $(OBJDIR)/rename.o
 
