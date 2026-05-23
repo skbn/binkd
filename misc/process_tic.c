@@ -227,8 +227,11 @@ static void process_one_tic(const char *ticpath, const char *inbound, const char
 
     if (!path_exists(src_path))
     {
-        fprintf(stderr, "process_tic: referenced file not found: %s\n", src_path);
-        return;
+        if (!path_find_ci(inbound, file_name, src_path, sizeof(src_path)))
+        {
+            fprintf(stderr, "process_tic: referenced file not found: %s\n", file_name);
+            return;
+        }
     }
 
     if (!ensure_dir(filebox) || !ensure_dir(area_dir))

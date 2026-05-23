@@ -15,6 +15,20 @@
 #include "portable.h"
 #include <ctype.h>
 
+/* Config cache in memory implementation */
+typedef struct ConfigEntry
+{
+    char key[64];
+    char value[MAXPATHLEN];
+    struct ConfigEntry *next;
+} ConfigEntry;
+
+struct ConfigCache
+{
+    ConfigEntry *entries;
+    int count;
+};
+
 /* trim_nl -- Strip trailing newline (\n and \r) from string */
 void trim_nl(char *s)
 {
@@ -110,6 +124,35 @@ int wildmatch(const char *pat, const char *str)
     }
 
     return (*str == '\0') ? 1 : 0;
+}
+
+int safe_strcasecmp(const char *a, const char *b)
+{
+    if (a == NULL && b == NULL)
+        return 0;
+
+    if (a == NULL)
+        return -1;
+
+    if (b == NULL)
+        return 1;
+
+    while (*a && *b)
+    {
+        unsigned char ca = (unsigned char)*a;
+        unsigned char cb = (unsigned char)*b;
+
+        int da = toupper(ca);
+        int db = toupper(cb);
+
+        if (da != db)
+            return da - db;
+
+        a++;
+        b++;
+    }
+
+    return toupper((unsigned char)*a) - toupper((unsigned char)*b);
 }
 
 /* is_wildcard -- True if name contains * or ? */
@@ -527,6 +570,84 @@ int make_abs_path(const char *src, char *dst, int dstlen)
 #endif
 }
 
+int path_find_ci(const char *dir, const char *name, char *out, int outsize)
+{
+#ifdef AMIGA
+    BPTR lock;
+    struct FileInfoBlock *fib;
+    int found = 0;
+
+    if (!dir || !name || !out || outsize <= 0)
+        return 0;
+
+    lock = Lock((STRPTR)dir, ACCESS_READ);
+    if (!lock)
+        return 0;
+
+    fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+    if (!fib)
+    {
+        UnLock(lock);
+        return 0;
+    }
+
+    if (Examine(lock, fib))
+    {
+        LONG dos_rc;
+
+        do
+        {
+            /* files only */
+            if (fib->fib_DirEntryType < 0 && safe_strcasecmp(fib->fib_FileName, name) == 0)
+            {
+                path_join(out, outsize, dir, fib->fib_FileName);
+                found = 1;
+                break;
+            }
+
+            dos_rc = ExNext(lock, fib);
+
+            if (!dos_rc)
+                break; /* Exit on any error or end of directory */
+
+        } while (1);
+    }
+
+    FreeDosObject(DOS_FIB, fib);
+    UnLock(lock);
+
+    return found;
+
+#else
+    DIR *dp;
+    struct dirent *de;
+    char candidate[MAXPATHLEN];
+
+    if (!dir || !name || !out || outsize <= 0)
+        return 0;
+
+    dp = opendir(dir);
+    if (!dp)
+        return 0;
+
+    while ((de = readdir(dp)) != NULL)
+    {
+        path_join(candidate, sizeof(candidate), dir, de->d_name);
+
+        if (safe_strcasecmp(de->d_name, name) == 0 &&
+            is_regular_file(candidate))
+        {
+            path_join(out, outsize, dir, de->d_name);
+            closedir(dp);
+            return 1;
+        }
+    }
+
+    closedir(dp);
+    return 0;
+#endif
+}
+
 /* parse_config_line -- Parse a config line into key and value
  * Handles: BOM, leading/trailing whitespace, tabs, comments inline (#)
  * Returns 1 if valid key=value parsed, 0 if blank/comment/invalid
@@ -707,20 +828,6 @@ long parse_time(const char *s)
 
     return 0;
 }
-
-/* Config cache in memory implementation */
-typedef struct ConfigEntry
-{
-    char key[64];
-    char value[MAXPATHLEN];
-    struct ConfigEntry *next;
-} ConfigEntry;
-
-struct ConfigCache
-{
-    ConfigEntry *entries;
-    int count;
-};
 
 /* config_load -- Load entire config file into memory cache
  * Returns cache pointer on success, NULL on error

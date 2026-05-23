@@ -123,6 +123,7 @@ void str_trim(char *s);
 void str_upper(char *s);
 void str_tolower(char *s);
 char *skip_ws(char *s);
+int safe_strcasecmp(const char *a, const char *b);
 
 /* Wildcard matching */
 int wildmatch(const char *pat, const char *str);
@@ -138,6 +139,7 @@ long get_file_mtime(const char *path);
 /* Path utilities */
 void path_join(char *out, int outsize, const char *base, const char *sub);
 int make_abs_path(const char *src, char *dst, int dstlen);
+int path_find_ci(const char *dir, const char *name, char *out, int outsize);
 
 /* Config parsing utilities */
 int parse_config_line(const char *line, char *key, int klen, char *val, int vlen);
