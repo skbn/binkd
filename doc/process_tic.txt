@@ -36,7 +36,7 @@ EXAMPLE CONFIG FILE (process_tic.conf):
   logfile    Work:Logs/process_tic.log
   ticlog     Work:Logs/tic.log
   filelist   Work:Filebox/filelist.txt
-  newfiles   Work:Filebox/newfiles.txt
+  newfiles   Work:Filebox
 
 EXAMPLES:
   process_tic --conf process_tic.conf
