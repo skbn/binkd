@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     if (argc < 3)
     {
         fprintf(stderr, "Usage: nodelist [--pointlist] <nodelist_file> <domain> [<output_file>]\n"
-                "       --pointlist  Process pointlist format (Boss/Point styles per FTS-5002)\n");
+                        "       --pointlist  Process pointlist format (Boss/Point styles per FTS-5002)\n");
         return 1;
     }
 
@@ -161,6 +161,7 @@ int main(int argc, char *argv[])
         int parsed_zone, parsed_net, parsed_node;
         int point_num;
         int pzone, pnet, pboss;
+        char *colon_pos;
 
         str_trim(buf);
 
@@ -195,18 +196,18 @@ int main(int argc, char *argv[])
             {
                 /* Parse boss address (field 1 or 2 depending on format) */
                 addr_field = NULL;
-                
+
                 if (nf > 2 && fields[2] && (strchr(fields[2], ':') || strchr(fields[2], '/')))
                     addr_field = fields[2];
                 else if (nf > 1 && fields[1] && (strchr(fields[1], ':') || strchr(fields[1], '/')))
                     addr_field = fields[1];
-                
+
                 if (addr_field)
                 {
                     parsed_zone = 0;
                     parsed_net = 0;
                     parsed_node = 0;
-                    
+
                     if (strchr(addr_field, ':'))
                     {
                         /* Format: Z:N/N */
@@ -252,8 +253,43 @@ int main(int argc, char *argv[])
                 if (!find_flag(fields, nf, flags_start, "INA", ina_host, (int)sizeof(ina_host)))
                     ina_host[0] = '\0';
 
-                port = (ibn_port[0] && atoi(ibn_port) > 0) ? atoi(ibn_port) : 24554;
-               
+                /* If INA is missing, try to extract hostname from IBN (format: IBN:hostname:port) */
+                if (!ina_host[0] && ibn_port[0])
+                {
+                    colon_pos = strchr(ibn_port, ':');
+                    if (colon_pos)
+                    {
+                        /* Format: IBN:hostname:port */
+                        strncpy(ina_host, ibn_port, (size_t)(colon_pos - ibn_port));
+                        ina_host[colon_pos - ibn_port] = '\0';
+                        /* Port is after the second colon */
+                        port = atoi(colon_pos + 1);
+                        if (port <= 0)
+                            port = 24554;
+                    }
+                    else
+                    {
+                        /* Format: IBN:port (no hostname) or IBN:hostname (no port) */
+                        /* Assume it's a hostname if it contains dots or letters */
+                        if (strpbrk(ibn_port, ".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+                        {
+                            strncpy(ina_host, ibn_port, sizeof(ina_host) - 1);
+                            ina_host[sizeof(ina_host) - 1] = '\0';
+                            port = 24554;
+                        }
+                        else
+                        {
+                            port = atoi(ibn_port);
+                            if (port <= 0)
+                                port = 24554;
+                        }
+                    }
+                }
+                else
+                {
+                    port = (ibn_port[0] && atoi(ibn_port) > 0) ? atoi(ibn_port) : 24554;
+                }
+
                 fprintf(out, "node %d:%d/%d.%d@%s %s:%d -\n", pzone, pnet, pboss, point_num, domain, ina_host[0] ? ina_host : "-", port);
                 point_count++;
                 continue;
@@ -271,10 +307,46 @@ int main(int argc, char *argv[])
                 if (!find_flag(fields, nf, flags_start, "INA", ina_host, (int)sizeof(ina_host)))
                     ina_host[0] = '\0';
 
-                port = (ibn_port[0] && atoi(ibn_port) > 0) ? atoi(ibn_port) : 24554;
+                /* If INA is missing, try to extract hostname from IBN (format: IBN:hostname:port) */
+                if (!ina_host[0] && ibn_port[0])
+                {
+                    colon_pos = strchr(ibn_port, ':');
+                    if (colon_pos)
+                    {
+                        /* Format: IBN:hostname:port */
+                        strncpy(ina_host, ibn_port, (size_t)(colon_pos - ibn_port));
+                        ina_host[colon_pos - ibn_port] = '\0';
+
+                        /* Port is after the second colon */
+                        port = atoi(colon_pos + 1);
+                        if (port <= 0)
+                            port = 24554;
+                    }
+                    else
+                    {
+                        /* Format: IBN:port (no hostname) or IBN:hostname (no port) */
+                        /* Assume it's a hostname if it contains dots or letters */
+                        if (strpbrk(ibn_port, ".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+                        {
+                            strncpy(ina_host, ibn_port, sizeof(ina_host) - 1);
+                            ina_host[sizeof(ina_host) - 1] = '\0';
+                            port = 24554;
+                        }
+                        else
+                        {
+                            port = atoi(ibn_port);
+                            if (port <= 0)
+                                port = 24554;
+                        }
+                    }
+                }
+                else
+                {
+                    port = (ibn_port[0] && atoi(ibn_port) > 0) ? atoi(ibn_port) : 24554;
+                }
 
                 fprintf(out, "node %d:%d/%d.%d@%s %s:%d -\n", boss_zone, boss_net, boss_node, point_num, domain, ina_host[0] ? ina_host : "-", port);
-               
+
                 point_count++;
 
                 continue;
@@ -313,10 +385,46 @@ int main(int argc, char *argv[])
         ina_host[0] = '\0';
         find_flag(fields, nf, flags_start, "INA", ina_host, (int)sizeof(ina_host));
 
+        /* If INA is missing, try to extract hostname from IBN (format: IBN:hostname:port) */
+        if (!ina_host[0] && ibn_port[0])
+        {
+            colon_pos = strchr(ibn_port, ':');
+            if (colon_pos)
+            {
+                /* Format: IBN:hostname:port */
+                strncpy(ina_host, ibn_port, (size_t)(colon_pos - ibn_port));
+                ina_host[colon_pos - ibn_port] = '\0';
+
+                /* Port is after the second colon */
+                port = atoi(colon_pos + 1);
+                if (port <= 0)
+                    port = 24554;
+            }
+            else
+            {
+                /* Format: IBN:port (no hostname) or IBN:hostname (no port) */
+                /* Assume it's a hostname if it contains dots or letters */
+                if (strpbrk(ibn_port, ".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+                {
+                    strncpy(ina_host, ibn_port, sizeof(ina_host) - 1);
+                    ina_host[sizeof(ina_host) - 1] = '\0';
+                    port = 24554;
+                }
+                else
+                {
+                    port = atoi(ibn_port);
+                    if (port <= 0)
+                        port = 24554;
+                }
+            }
+        }
+        else
+        {
+            port = (ibn_port[0] && atoi(ibn_port) > 0) ? atoi(ibn_port) : 24554;
+        }
+
         if (!ina_host[0])
             continue;
-
-        port = (ibn_port[0] && atoi(ibn_port) > 0) ? atoi(ibn_port) : 24554;
 
         /* Skip if zone context is invalid (avoids 0:net/node AKAs) */
         if (cur_zone == 0)
