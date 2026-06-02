@@ -25,7 +25,7 @@ CONFIGURATION FILE FORMAT:
   logfile    <path>              Log file path
   ticlog     <path>              TIC processing log
   filelist   <path>              File list output
-  newfiles   <path>              New files list output
+  newfiles   <path>              New files list output (must be a directory if specified)
 
 EXAMPLE CONFIG FILE (process_tic.conf):
   # process_tic.conf - Configuration for TIC processor
