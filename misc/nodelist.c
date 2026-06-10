@@ -70,9 +70,11 @@ static int find_flag(char **fields, int nfields, int start, const char *flag, ch
                 else
                     val[0] = '\0';
             }
+
             return 1;
         }
     }
+
     return 0;
 }
 
@@ -94,6 +96,9 @@ int main(int argc, char *argv[])
     long node_count;
     long point_count;
     int i;
+    const char *default_host = NULL;
+    const char *default_port = NULL;
+    int default_port_num = 24554;
 
     cur_zone = 0;
     cur_net = 0;
@@ -109,7 +114,10 @@ int main(int argc, char *argv[])
     if (argc < 3)
     {
         fprintf(stderr, "Usage: nodelist [--pointlist] <nodelist_file> <domain> [<output_file>]\n"
-                        "       --pointlist  Process pointlist format (Boss/Point styles per FTS-5002)\n");
+                        "       nodelist --pointlist --host hostname --port port <nodelist_file> <domain> [<output_file>]\n"
+                        "       --pointlist  Process pointlist format (Boss/Point styles per FTS-5002)\n"
+                        "       --host hostname  Required hostname/IP for points (required with --pointlist)\n"
+                        "       --port port      Required port for points (required with --pointlist)\n");
         return 1;
     }
 
@@ -119,11 +127,30 @@ int main(int argc, char *argv[])
     {
         is_pointlist = 1;
         i++;
+
+        /* --host y --port son obligatorios con --pointlist */
+        if (i + 4 >= argc || strcmp(argv[i], "--host") != 0 || strcmp(argv[i + 2], "--port") != 0)
+        {
+            fprintf(stderr, "Error: --pointlist requires --host hostname and --port port\n");
+            return 1;
+        }
+
+        default_host = argv[i + 1];
+        default_port = argv[i + 3];
+        default_port_num = atoi(default_port);
+
+        if (default_port_num <= 0)
+        {
+            fprintf(stderr, "Error: Invalid port number: %s\n", default_port);
+            return 1;
+        }
+
+        i += 4;
     }
 
     if (argc - i < 2)
     {
-        fprintf(stderr, "Usage: nodelist [--pointlist] <nodelist_file> <domain> [<output_file>]\n");
+        fprintf(stderr, "Usage: nodelist [--pointlist --host hostname --port port] <nodelist_file> <domain> [<output_file>]\n");
         return 1;
     }
 
@@ -229,6 +256,7 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
+
                 continue;
             }
 
@@ -262,8 +290,10 @@ int main(int argc, char *argv[])
                         /* Format: IBN:hostname:port */
                         strncpy(ina_host, ibn_port, (size_t)(colon_pos - ibn_port));
                         ina_host[colon_pos - ibn_port] = '\0';
+
                         /* Port is after the second colon */
                         port = atoi(colon_pos + 1);
+
                         if (port <= 0)
                             port = 24554;
                     }
@@ -281,6 +311,7 @@ int main(int argc, char *argv[])
                         {
                             port = atoi(ibn_port);
                             if (port <= 0)
+
                                 port = 24554;
                         }
                     }
@@ -290,8 +321,9 @@ int main(int argc, char *argv[])
                     port = (ibn_port[0] && atoi(ibn_port) > 0) ? atoi(ibn_port) : 24554;
                 }
 
-                fprintf(out, "node %d:%d/%d.%d@%s %s:%d -\n", pzone, pnet, pboss, point_num, domain, ina_host[0] ? ina_host : "-", port);
+                fprintf(out, "node %d:%d/%d.%d@%s %s:%d -\n", pzone, pnet, pboss, point_num, domain, ina_host[0] ? ina_host : default_host, ina_host[0] ? port : default_port_num);
                 point_count++;
+
                 continue;
             }
 
@@ -319,6 +351,7 @@ int main(int argc, char *argv[])
 
                         /* Port is after the second colon */
                         port = atoi(colon_pos + 1);
+
                         if (port <= 0)
                             port = 24554;
                     }
@@ -335,6 +368,7 @@ int main(int argc, char *argv[])
                         else
                         {
                             port = atoi(ibn_port);
+
                             if (port <= 0)
                                 port = 24554;
                         }
@@ -345,7 +379,7 @@ int main(int argc, char *argv[])
                     port = (ibn_port[0] && atoi(ibn_port) > 0) ? atoi(ibn_port) : 24554;
                 }
 
-                fprintf(out, "node %d:%d/%d.%d@%s %s:%d -\n", boss_zone, boss_net, boss_node, point_num, domain, ina_host[0] ? ina_host : "-", port);
+                fprintf(out, "node %d:%d/%d.%d@%s %s:%d -\n", boss_zone, boss_net, boss_node, point_num, domain, ina_host[0] ? ina_host : default_host, ina_host[0] ? port : default_port_num);
 
                 point_count++;
 
@@ -397,6 +431,7 @@ int main(int argc, char *argv[])
 
                 /* Port is after the second colon */
                 port = atoi(colon_pos + 1);
+
                 if (port <= 0)
                     port = 24554;
             }
@@ -413,6 +448,7 @@ int main(int argc, char *argv[])
                 else
                 {
                     port = atoi(ibn_port);
+
                     if (port <= 0)
                         port = 24554;
                 }
