@@ -9,6 +9,9 @@ DESCRIPTION:
 
   Arguments:
     --pointlist     Process pointlist format (FTS-5002 Boss/Point styles)
+	--host			Boss host (Only with point list)
+	--port			Boss port (Only with point list)
+
     nodelist_file   Path to the FidoNet nodelist/pointlist file
     domain          Domain name for the node entries (e.g., fidonet)
     output_file     Optional output file (default: stdout)
