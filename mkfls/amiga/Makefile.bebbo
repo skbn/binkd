@@ -13,6 +13,7 @@ TOOL_CFLAGS = $(DEFINES) $(COMMON_CFLAGS) -O -m68000 -msoft-float -fomit-frame-p
 TOOL_LDFLAGS = -Wl,--gc-sections -Wl,-Map=bebbo_tools.map -s
 
 OBJDIR = objs
+BINDIR = bin
 
 DEFINES = \
   -DAMIGA                    \
@@ -126,36 +127,39 @@ all: binkd decompress process_tic freq srifreq nodelist
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
+$(BINDIR):
+	mkdir -p $(BINDIR)
+
 $(OBJDIR)/%.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
-binkd: $(OBJDIR) $(OBJS)
-	$(CC) $(CFLAGS) -o binkd $(OBJS) $(LIBS) $(LDFLAGS)
+binkd: $(OBJDIR) $(BINDIR) $(OBJS)
+	$(CC) $(CFLAGS) -o $(BINDIR)/binkd $(OBJS) $(LIBS) $(LDFLAGS)
 
 # ---------- Utility tools (stand-alone, multi-platform) ----------
 # TOOL_CFLAGS and TOOL_LDFLAGS defined above
 
-decompress:
-	$(CC) $(TOOL_CFLAGS) -o decompress misc/decompress.c misc/portable.c amiga/dirent.c $(TOOL_LDFLAGS)
+decompress: $(BINDIR)
+	$(CC) $(TOOL_CFLAGS) -o $(BINDIR)/decompress misc/decompress.c misc/portable.c amiga/dirent.c $(TOOL_LDFLAGS)
 
-process_tic:
-	$(CC) $(TOOL_CFLAGS) -o process_tic misc/process_tic.c misc/portable.c amiga/dirent.c $(TOOL_LDFLAGS)
+process_tic: $(BINDIR)
+	$(CC) $(TOOL_CFLAGS) -o $(BINDIR)/process_tic misc/process_tic.c misc/portable.c amiga/dirent.c $(TOOL_LDFLAGS)
 
-freq:
-	$(CC) $(TOOL_CFLAGS) -o freq misc/freq.c misc/portable.c $(TOOL_LDFLAGS)
+freq: $(BINDIR)
+	$(CC) $(TOOL_CFLAGS) -o $(BINDIR)/freq misc/freq.c misc/portable.c $(TOOL_LDFLAGS)
 
-srifreq:
-	$(CC) $(TOOL_CFLAGS) -o srifreq misc/srifreq.c misc/portable.c amiga/dirent.c $(TOOL_LDFLAGS)
+srifreq: $(BINDIR)
+	$(CC) $(TOOL_CFLAGS) -o $(BINDIR)/srifreq misc/srifreq.c misc/portable.c amiga/dirent.c $(TOOL_LDFLAGS)
 
-nodelist:
-	$(CC) $(TOOL_CFLAGS) -o nodelist misc/nodelist.c misc/portable.c $(TOOL_LDFLAGS)
+nodelist: $(BINDIR)
+	$(CC) $(TOOL_CFLAGS) -o $(BINDIR)/nodelist misc/nodelist.c misc/portable.c $(TOOL_LDFLAGS)
 
 install: all clean
 
 clean:
 	rm -f *.[bo] *.BAK *.core *.obj *.err *~ core
 	rm -rf $(OBJDIR)
-	rm -f binkd decompress process_tic freq srifreq nodelist
+	rm -rf $(BINDIR)
 
 # ---------- Explicit rules for amiga/ objects ----------
 $(OBJDIR)/delete.o: amiga/delete.c
