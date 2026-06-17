@@ -26,6 +26,13 @@ And some utilities:
 - nodelist: FidoNet nodelist and points compiler for binkd
 - decompress: Decompress FTN bundle archives from an inbound directory
 
+## AmigaOS
+It does not require ixemul. The entire API has been replaced with the Amigaos 3 API and bsdsocket.library (TCP/IP roadshow).
+
+The release version was compiled with bebbo's gcc using ndk 3.2, so it requires amigaos > 3.1
+
+It is still in the testing phase.
+
 ## Compiling
 
 non-UNIX:
@@ -34,13 +41,6 @@ non-UNIX:
    to the root of the sources.
 2. Run make (nmake, wmake or gmake, name of make's binary is rely with C
    compiler).
-
-AmigaOS:
-It does not require ixemul. The entire API has been replaced with the Amigaos 3 API and bsdsocket.library (TCP/IP roadshow).
-
-The release version was compiled with bebbo's gcc using ndk 3.2, so it requires amigaos > 3.1
-
-It is still in the testing phase.
 
 UNIXes:
 
