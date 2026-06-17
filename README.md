@@ -8,6 +8,7 @@ FTN-based (Fido Technology Network) networks.
 - Auto NR-mode on incomplete files
 - NC_flag (no-compression per node)
 - no-call-delay config keyword
+- mkfls/unix/Makefile.in (-DPROTOTYPES)
 
 ```
 If you only want to apply the patch with the changes mentioned above to the original unmodified code:
