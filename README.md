@@ -4,6 +4,28 @@ As a FTN-compatible internet daemon, it makes possible efficient
 utilization of TCP/IP protocol suite as a transport layer in
 FTN-based (Fido Technology Network) networks.
 
+## Added to the original version
+- Auto NR-mode on incomplete files
+- NC_flag (no-compression per node)
+- no-call-delay config keyword
+
+```
+If you only want to apply the patch with the changes mentioned above to the original unmodified code:
+
+git clone https://github.com/pgul/binkd
+
+Copy the 0001-binkd_pgul_nr_nc_nocall.patch to the root directory and apply patch
+
+patched -p1 < 0001-binkd_pgul_nr_nc_nocall.patch
+```
+
+## Utilities
+And some utilities:
+- srifreq: SRIF-compatible file-request server for binkd
+- process_tic: Process FTN .tic files from inbound to filebox
+- nodelist: FidoNet nodelist and points compiler for binkd
+- decompress: Decompress FTN bundle archives from an inbound directory
+
 ## Compiling
 
 non-UNIX:
