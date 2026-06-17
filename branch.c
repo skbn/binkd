@@ -20,6 +20,12 @@
 #include "tools.h"
 #include "sem.h"
 
+#ifdef AMIGA
+int ix_vfork (void);
+void vfork_setup_child (void);
+void ix_vfork_resume (void);
+#endif
+
 #ifdef WITH_PTHREADS
 typedef struct {
     void (*F) (void *);
@@ -72,7 +78,7 @@ int branch (register void (*F) (void *), register void *arg, register size_t siz
   else
     arg = 0;
 
-#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(DEBUGCHILD)
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(AMIGA) && !defined(DEBUGCHILD)
 again:
   if (!(rc = fork ()))
   {
@@ -124,6 +130,23 @@ again:
   if ((rc = BEGINTHREAD (F, STACKSIZE, arg)) < 0)
     Log (1, "_beginthread: %s", strerror (errno));
   #endif
+#endif
+
+#ifdef AMIGA
+  /* this is rather bizzare. this function pretends to be a fork and behaves
+   * like one, but actually it's a kind of a thread. so we'll need semaphores */
+
+  if (!(rc = ix_vfork ()))
+  {
+    vfork_setup_child ();
+    ix_vfork_resume ();
+    F (arg);
+    exit (0);
+  }
+  else if (rc < 0)
+  {
+    Log (1, "ix_vfork: %s", strerror (errno));
+  }
 #endif
 
 #if defined(DOS) || defined(DEBUGCHILD)

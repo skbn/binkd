@@ -22,11 +22,6 @@
 #include <syslog.h>
 #endif
 
-#ifdef AMIGA
-#include "amiga/bsdsock.h"
-#include <proto/exec.h>
-#endif
-
 #include "sys.h"
 #include "readcfg.h"
 #include "common.h"
@@ -42,12 +37,6 @@
 #if defined(WIN32) && !defined(BINKD9X)
 #include "nt/w32tools.h"
 #endif
-
-#if defined(HAVE_THREADS) || defined(AMIGA)
-extern MUTEXSEM lsem;
-#endif
-
-extern void vLog (int lev, char *s, va_list ap);
 
 /*
  * We can call Log() even when we have no config ready. So, we must keep
@@ -301,10 +290,6 @@ void vLog (int lev, char *s, va_list ap)
   char buf[1024];
   int ok = 1;
 
-#ifdef AMIGA
-  static int need_newline = 0;
-#endif
-
   /* make string in buffer */
   vsnprintf(buf, sizeof(buf), s, ap);
   /* do perl hooks */
@@ -328,20 +313,8 @@ void vLog (int lev, char *s, va_list ap)
     if (lev <= current_conlog && !inetd_flag)
     {
       LockSem(&lsem);
-#ifdef AMIGA
-      /* AmigaOS: go to new line for status messages to avoid overwriting */
-      if (lev < 0 && need_newline)
-      {
-        need_newline = 0;
-      }
-      fprintf (stderr, "%30.30s\r%c %02d:%02d [%u] %s%s", " ", ch,
-           tm.tm_hour, tm.tm_min, (unsigned) PID (), buf, (lev >= 0) ? "\n" : "\r");
-      if (lev >= 0)
-        need_newline = 1;
-#else
       fprintf (stderr, "%30.30s\r%c %02d:%02d [%u] %s%s", " ", ch,
            tm.tm_hour, tm.tm_min, (unsigned) PID (), buf, (lev >= 0) ? "\n" : "");
-#endif
       fflush (stderr);
       ReleaseSem(&lsem);
       if (lev < 0)
@@ -688,11 +661,7 @@ int delete (char *path)
 {
   int rc;
 
-#ifndef UNIX
-  if ((rc = sdelete (path)) != 0)
-#else
   if ((rc = unlink (path)) != 0)
-#endif
     Log (1, "error unlinking `%s': %s", path, strerror (errno));
   else
     Log (5, "unlinked `%s'", path);
@@ -726,26 +695,12 @@ int sdelete (char *path)
   int i, rc;
 
   for (i=0; i<5; i++) {
-#ifdef AMIGA
-    if ((rc = o_delete (path)) == 0) {
-#else
     if ((rc = unlink (path)) == 0) {
-#endif
       Log (6, "unlinked `%s'", path);
       return 0;
     }
-    else if (errno == EPERM || errno == EACCES || errno == EAGAIN
-#ifdef EBUSY
-             || errno == EBUSY
-#endif
-            )
-    {
-#ifdef AMIGA
-      Delay(1);  /* 1 tick = 20ms @ 50Hz on AmigaOS */
-#else
+    else if (errno == EPERM || errno == EACCES || errno == EAGAIN)
       sleep (1);
-#endif
-    }
     else
       break;
   }

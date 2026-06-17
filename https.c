@@ -318,11 +318,7 @@ int h_connect(int so, const char *host, const char *port, BINKD_CONFIG *config, 
 				buf[1]=1;
 				lockhostsem();
 				Log (4, strcmp(port, config->oport) == 0 ? "trying %s..." : "trying %s:%u...",
-#ifdef AMIGA
-				inet_ntoa(((struct sockaddr_in*)(ai->ai_addr))->sin_addr.s_addr), portnum);
-#else
-				inet_ntoa(((struct sockaddr_in*)(ai->ai_addr))->sin_addr), portnum);
-#endif
+				     inet_ntoa(((struct sockaddr_in*)(ai->ai_addr))->sin_addr), portnum);
 				releasehostsem();
 				buf[2]=(unsigned char)((portnum>>8)&0xFF);
 				buf[3]=(unsigned char)(portnum&0xFF);

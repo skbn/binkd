@@ -39,10 +39,6 @@
 #endif
 #include "rfc2553.h"
 
-#if defined(HAVE_THREADS)
-extern EVENTSEM eothread;
-#endif
-
 int n_servers = 0;
 int ext_rand = 0;
 
@@ -57,8 +53,7 @@ static void serv (void *arg)
   void *cperl;
 #endif
 
-/* Prevent shared socket closure */
-#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(AMIGA) && !defined(DEBUGCHILD)
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(DEBUGCHILD)
   int curfd;
   pidcmgr = 0;
   for (curfd=0; curfd<sockfd_used; curfd++)
@@ -145,13 +140,11 @@ static int do_server(BINKD_CONFIG *config)
                     (char *) &opt, sizeof opt) == SOCKET_ERROR)
         Log (1, "servmgr setsockopt (SO_REUSEADDR): %s", TCPERR ());
     
+      if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
       {
-        if (bind (sockfd[sockfd_used], ai->ai_addr, ai->ai_addrlen) != 0)
-        {
-			Log(1, "servmgr bind(): %s", TCPERR ());
-			soclose(sockfd[sockfd_used]);
-			return -1;
-		}
+        Log(1, "servmgr bind(): %s", TCPERR ());
+        soclose(sockfd[sockfd_used]);
+        return -1;
       }
       if (listen (sockfd[sockfd_used], 5) != 0)
       {
@@ -175,12 +168,6 @@ static int do_server(BINKD_CONFIG *config)
 
   setproctitle ("server manager (listen %s)", config->listen.first->port);
 
-  /* Save rescan_delay locally. checkcfg() may free 'config' (old config
-   * is released when usageCount reaches 0 after reload), so we must not
-   * access config->rescan_delay inside the loop after a reload */
-  {
-  int rescan = config->rescan_delay;
-
   for (;;)
   {
     struct timeval tv;
@@ -196,7 +183,7 @@ static int do_server(BINKD_CONFIG *config)
         maxfd = sockfd[curfd];
     }
     tv.tv_usec = 0;
-    tv.tv_sec  = rescan;
+    tv.tv_sec  = CHECKCFG_INTERVAL;
     unblocksig();
     check_child(&n_servers);
     n = select(maxfd+1, &r, NULL, NULL, &tv);
@@ -205,20 +192,8 @@ static int do_server(BINKD_CONFIG *config)
     { case 0: /* timeout */
         if (checkcfg()) 
         {
-          /* config may have been freed by checkcfg() — read rescan from
-           * the new current_config before returning for restart */
-          {
-			BINKD_CONFIG *nc = lock_current_config();
-            if (nc)
-			{
-				rescan = nc->rescan_delay;
-				unlock_config_structure(nc, 0);
-			}
-          }
-
           for (curfd=0; curfd<sockfd_used; curfd++)
             soclose(sockfd[curfd]);
-
           sockfd_used = 0;
           return 0;
         }
@@ -235,22 +210,10 @@ static int do_server(BINKD_CONFIG *config)
           unblocksig();
           check_child(&n_servers);
           blocksig();
-
           if (checkcfg())
           {
-            {
-			  BINKD_CONFIG *nc = lock_current_config();
-
-              if (nc)
-			  {
-				rescan = nc->rescan_delay;
-				unlock_config_structure(nc, 0);
-			  }
-            }
-
             for (curfd=0; curfd<sockfd_used; curfd++)
               soclose(sockfd[curfd]);
-
             sockfd_used = 0;
             return 0;
           }
@@ -282,6 +245,11 @@ static int do_server(BINKD_CONFIG *config)
             continue;
 #endif
         accepterr:
+#ifdef OS2
+          /* Buggy external process closed our socket? Or OS/2 bug? */
+          if (save_errno == ENOTSOCK)
+            return 0;  /* will force socket re-creation */
+#endif
           return -1;
         }
       }
@@ -321,9 +289,7 @@ static int do_server(BINKD_CONFIG *config)
           soclose(new_sockfd);
           rel_grow_handles (-6);
           threadsafe(--n_servers);
-#ifdef HAVE_THREADS
           PostSem(&eothread);
-#endif
           Log (1, "servmgr branch(): cannot branch out");
           sleep(1);
         }
@@ -337,7 +303,6 @@ static int do_server(BINKD_CONFIG *config)
       }
     }
   }
-  } /* end rescan block */
 }
 
 void servmgr (void)
@@ -365,7 +330,5 @@ void servmgr (void)
   } while (status == 0 && !binkd_exit);
   Log(4, "downing servmgr...");
   pidsmgr = 0;
-#ifdef HAVE_THREADS
   PostSem(&eothread);
-#endif
 }

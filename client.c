@@ -19,10 +19,6 @@
 #include <sys/wait.h>
 #endif
 
-#ifdef AMIGA
-#include "amiga/bsdsock.h"
-#endif
-
 #include "sys.h"
 #include "readcfg.h"
 #include "client.h"
@@ -47,13 +43,6 @@
 #endif
 #include "rfc2553.h"
 #include "srv_gai.h"
-
-#if defined(HAVE_THREADS)
-extern MUTEXSEM lsem;
-extern EVENTSEM eothread;
-#elif defined(AMIGA)
-extern MUTEXSEM lsem;
-#endif
 
 static void call (void *arg);
 
@@ -159,9 +148,7 @@ static int do_client(BINKD_CONFIG *config)
         unlock_config_structure(config, 0);
         rel_grow_handles (-6);
         threadsafe(--n_clients);
-#ifdef HAVE_THREADS
         PostSem(&eothread);
-#endif
         Log (1, "cannot branch out");
         SLEEP(1);
       }
@@ -169,7 +156,7 @@ static int do_client(BINKD_CONFIG *config)
       else
       {
         Log (5, "started client #%i, id=%i", n_clients, pid);
-#if defined(HAVE_FORK) && !defined(HAVE_THREADS)
+#if defined(HAVE_FORK) && !defined(HAVE_THREADS) && !defined(AMIGA)
         unlock_config_structure(config, 0); /* Forked child has own copy */
 #endif
       }
@@ -215,8 +202,7 @@ static int do_client(BINKD_CONFIG *config)
     /* This sleep can be interrupted by signal, it's OK */
     unblocksig();
     check_child(&n_clients);
-    if (!config->no_call_delay)
-      SLEEP (config->call_delay);
+    SLEEP (config->call_delay);
     check_child(&n_clients);
     blocksig();
   }
@@ -296,16 +282,8 @@ void clientmgr (void *arg)
 #ifdef HAVE_THREADS
         !server_flag &&
 #endif
-        /* AmigaOS uses shared-memory evloop — only main process calls checkcfg()
-         * On fork systems (Linux/FreeBSD) each process has separate memory
-         * so independent reloads are safe. */
         !poll_flag)
-#ifndef AMIGA
       checkcfg();
-#else
-	{
-	}
-#endif
   }
 
   Log (5, "downing clientmgr...");
@@ -328,7 +306,7 @@ void clientmgr (void *arg)
   exit (0);
 }
 
-int call0 (FTN_NODE *node, BINKD_CONFIG *config)
+static int call0 (FTN_NODE *node, BINKD_CONFIG *config)
 {
   int sockfd = INVALID_SOCKET;
   int sock_out;
