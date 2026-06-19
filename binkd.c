@@ -443,12 +443,21 @@ char *parseargs (int argc, char *argv[])
     cfgfile = argv[optind++];
 
   /* Validate config file name doesn't look like an FTN address (common mistake) */
+  /* But allow it if the file actually exists (e.g., Amiga paths with volume separator ':') */
   if (cfgfile && (strchr(cfgfile, ':') || strchr(cfgfile, '@')))
   {
-    fprintf(stderr, "%s: Error: '%s' looks like an FTN address, not a config file.\n", extract_filename(argv[0]), cfgfile);
-    fprintf(stderr, "Usage: %s [options] <config-file>\n", extract_filename(argv[0]));
-    fprintf(stderr, "       Use -P <address> for polling a specific node (e.g., -P 1:23/456.7)\n");
-    exit(1);
+    FILE *test = fopen(cfgfile, "r");
+    if (!test)
+    {
+      fprintf(stderr, "%s: Error: '%s' looks like an FTN address, not a config file.\n", extract_filename(argv[0]), cfgfile);
+      fprintf(stderr, "Usage: %s [options] <config-file>\n", extract_filename(argv[0]));
+      fprintf(stderr, "       Use -P <address> for polling a specific node (e.g., -P 1:23/456.7)\n");
+      exit(1);
+    }
+    else
+    {
+      fclose(test);
+    }
   }
 
   /* Check for leftover FTN addresses in extra arguments */
